@@ -9,36 +9,10 @@ export function makeTerrain(scene,data){
  for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i),h=terrainHeight(data,x,z);pos.setY(i,h);const f=THREE.MathUtils.smoothstep(h,15,100),c=low.clone().lerp(high,f);c.multiplyScalar(.9+.1*Math.sin(x*.037)*Math.sin(z*.027));col.push(c.r,c.g,c.b);}
  g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.computeVertexNormals();const mesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1}));mesh.receiveShadow=true;scene.add(mesh);
 }
-export function buildingMaterial(dusk){
- const mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.78,metalness:.12});
- mat.onBeforeCompile=s=>{
-  s.uniforms.uDusk=dusk;
-  s.vertexShader='varying vec3 vWorld;\nvarying vec3 vFace;\n'+s.vertexShader;
-  s.vertexShader=s.vertexShader.replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvWorld = (modelMatrix * vec4(transformed, 1.0)).xyz; vFace = normalize(mat3(modelMatrix) * normal);');
-  s.fragmentShader='varying vec3 vWorld;\nvarying vec3 vFace;\nuniform float uDusk;\n'+s.fragmentShader;
-  s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
-    float wall=1.0-step(0.5,abs(vFace.y));
-    vec2 facade=vec2(abs(vFace.x)>.5 ? vWorld.z:vWorld.x,vWorld.y);
-    vec2 cell=fract(facade/vec2(3.1,3.4));
-    vec2 aa = max(fwidth(facade/vec2(3.1,3.4)),vec2(.015));
-    float detail = 1.0-smoothstep(450.0,2100.0,distance(vWorld,cameraPosition));
-    float window=smoothstep(.19-aa.x,.19+aa.x,cell.x)*(1.0-smoothstep(.77-aa.x,.77+aa.x,cell.x))*smoothstep(.22-aa.y,.22+aa.y,cell.y)*(1.0-smoothstep(.79-aa.y,.79+aa.y,cell.y))*wall;
-    window *= detail;
-    float seed=fract(sin(dot(floor(facade/vec2(3.1,3.4)),vec2(12.9898,78.233)))*43758.5453);
-    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.095,.16,.17),(window*.64+wall*(1.0-detail)*.18));
-    float mullion=step(.955,cell.y)*wall*detail;
-    diffuseColor.rgb*=1.0-mullion*.18;
-  `);
-  s.fragmentShader=s.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
-    totalEmissiveRadiance += vec3(1.0,.59,.24)*window*step(.69,seed)*uDusk*.85;
-  `);
- };
- return mat;
-}
 export async function loadBuildings(scene,manifest,material,progress){
  let done=0;const queue=[...manifest].sort((a,b)=>Math.hypot(a.center[0]-2400,a.center[1]-1800)-Math.hypot(b.center[0]-2400,b.center[1]-1800));
- await Promise.all(Array.from({length:6},async()=>{while(queue.length){const m=queue.shift();const r=await fetch(`/data/buildings/${m.key}.city`);if(!r.ok)throw Error('Building tile unavailable');const b=await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer(),v=m.vertices;
- const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(b,0,v*3),3));g.setAttribute('normal',new THREE.BufferAttribute(new Int8Array(b,v*12,v*3),3,true));g.setAttribute('color',new THREE.BufferAttribute(new Uint8Array(b,v*15,v*3),3,true));g.setIndex(new THREE.BufferAttribute(new Uint32Array(b,m.indexOffset,m.indices),1));g.computeBoundingSphere();
+ await Promise.all(Array.from({length:6},async()=>{while(queue.length){const m=queue.shift();const r=await fetch(`/data/buildings/${m.file||m.key+".city"}`);if(!r.ok)throw Error('Building tile unavailable');const b=await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer(),v=m.vertices;
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(b,0,v*3),3));g.setAttribute('normal',new THREE.BufferAttribute(new Int8Array(b,v*12,v*3),3,true));g.setAttribute('color',new THREE.BufferAttribute(new Uint8Array(b,v*15,v*3),3,true));g.setAttribute('facadeStyle',new THREE.BufferAttribute(new Uint8Array(b,m.styleOffset,v*2),2));g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(b,m.uvOffset,v*2),2));g.setIndex(new THREE.BufferAttribute(new Uint32Array(b,m.indexOffset,m.indices),1));g.computeBoundingSphere();
  const mesh=new THREE.Mesh(g,material);mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);progress(++done/manifest.length);await new Promise(resolve=>setTimeout(resolve,0));}}));
 }
 const widths={motorway:22,trunk:20,primary:21,secondary:16,tertiary:12,residential:7,unclassified:6,living_street:5};
@@ -93,4 +67,9 @@ export function addMemorial(scene,terrain){
 export function makeFootways(scene,routes,terrain){
  const geos=routes.filter(r=>r.k==='walk').map(r=>ribbon(r.p,2.1,.28,terrain));
  addMerged(scene,geos,new THREE.MeshStandardMaterial({color:'#bcad8c',roughness:1,side:THREE.DoubleSide}));
+}
+
+export async function addCityLandmarks(scene,terrain){
+ const entries=[['sun-yat-sen',121.56029,25.04001],['taipei-main-station',121.51712,25.04772],['taipei-dome',121.55958,25.04239]];
+ const loader=new GLTFLoader();await Promise.all(entries.map(async([name,lon,lat])=>{const gltf=await loader.loadAsync(`/models/${name}.glb`),groups=new Map();gltf.scene.updateMatrixWorld(true);gltf.scene.traverse(o=>{if(!o.isMesh)return;const key=o.material.uuid;if(!groups.has(key))groups.set(key,{material:o.material,geometries:[]});const g=o.geometry.clone().applyMatrix4(o.matrixWorld);for(const attr of Object.keys(g.attributes))if(attr!=='position'&&attr!=='normal')g.deleteAttribute(attr);groups.get(key).geometries.push(g);});const group=new THREE.Group();group.name=name;const p=project(lon,lat);p.y=terrainHeight(terrain,p.x,p.z);group.position.copy(p);for(const {material,geometries} of groups.values()){const mesh=new THREE.Mesh(mergeGeometries(geometries),material);geometries.forEach(g=>g.dispose());mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);}scene.add(group);}));
 }

@@ -17,7 +17,8 @@
     "data:prepare": "node scripts/prepare-city.mjs",
     "models": "blender -b --python scripts/build-landmarks.py",
     "test": "playwright test",
-    "data:activity": "node scripts/prepare-activity.mjs"
+    "data:activity": "node scripts/prepare-activity.mjs",
+    "models:city": "blender -b --python scripts/build-city-landmarks.py"
   },
   "dependencies": {
     "three": "^0.183.2"

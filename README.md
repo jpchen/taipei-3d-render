@@ -25,7 +25,7 @@ npm run deploy
 
 ## Data and asset pipeline
 
-Committed generated data makes the deployed app independent of live mapping services. Initial city geometry is approximately 15 MB compressed, plus terrain, road data and the landmark.
+Committed generated data makes the deployed app independent of live mapping services. Initial city geometry is approximately 22 MB compressed, plus terrain, road data and the landmark.
 
 ```sh
 npm run data:map       # Fetch OSM footprints, roads, parks and waterways
@@ -36,7 +36,7 @@ npm run models        # Generate .blend and export Taipei 101 to .glb
 
 The map bounds are 25.005–25.105° N and 121.475–121.615° E. Terrain extends beyond the city to the surrounding mountains. Coordinates use a local approximation centered on 121.54° E, 25.05° N, with meters as world units and north along negative Z.
 
-The model includes 64,603 buildings, of which 27,095 have mapped height or level values. Remaining heights are deterministic estimates. Footprints and street alignments are real map features. Heights, procedural facades, roof details, trees, the interpretive Memorial Hall and the Blender landmark are not survey-grade reconstruction. Terrain is sampled to a 385×385 grid and lowered by 12 m to place the basin near scene zero. Some river outlines and multipolygon buildings are simplified or absent because this pipeline uses OSM ways. The soundscape is synthesized wind, traffic and birds; it is not a field recording. Free navigation is aerial and does not provide building collision detection.
+The model includes 64,280 extruded buildings, of which 26,947 have mapped height or level values. Remaining heights are deterministic estimates. Footprints and street alignments are real map features. Heights, procedural facades, roof details, trees, the interpretive Memorial Hall and the Blender landmark are not survey-grade reconstruction. Terrain is sampled to a 385×385 grid and lowered by 12 m to place the basin near scene zero. Underground-only structures are excluded. Some river outlines and multipolygon buildings are simplified or absent because this pipeline uses OSM ways. The soundscape is synthesized wind, traffic and birds; it is not a field recording. Free navigation is aerial and does not provide building collision detection.
 
 Rendering uses batched indexed building geometry, GPU facade shading, instanced trees and traffic, atmospheric sky, physically based materials, shadow mapping, subtle bloom and filmic tone mapping. Battery saver reduces resolution and disables bloom and shadows.
 
@@ -60,3 +60,9 @@ Browser tests check successful WebGL loading, viewpoint movement, orbit and keyb
 ## Street activity
 
 Middle-drag pans; the **Explore at street level** button moves to a nearby mapped road. Cars, buses, scooters and walking people share four instanced prototypes (at most four activity draw calls). Vehicles follow road direction and right-hand lanes; people follow mapped footways. Spatial indexing limits simulation to nearby routes. Pedestrians disappear beyond 520 m (230 m in battery saver), vehicles beyond 3 km (1.8 km in battery saver), and offscreen instances are culled. Instance updates are capped at 30 Hz / 15 Hz; walking motion runs in the vertex shader. Activity pauses in hidden tabs and respects reduced-motion preferences. Settings can disable it altogether. `npm run data:activity` regenerates route data; the additional OSM footway extract is in `assets/walkways-source.json`.
+
+## Architecture
+
+Six facade families distinguish plaster, glass curtain walls, ceramic tiles, brick, industrial cladding and traditional/civic buildings. Mapped building colors/materials are honored when present; other finishes are deterministic interpretations. Facade coordinates follow each actual footprint edge, including diagonal walls. Near views add balcony geometry, rooftop water tanks, HVAC units, stair enclosures and a shared shop-sign atlas. These details use five instanced draw calls, cull by distance and visibility, and have reduced budgets in battery saver mode.
+
+Taipei Dome, Taipei Main Station and Sun Yat-sen Memorial Hall now have separate Blender models (`assets/taipei-landmarks.blend`, `npm run models:city`) instead of generic extrusions. They are recognizable architectural interpretations, not scanned assets. [Sun Yat-sen Memorial Hall's official architectural description](https://www.yatsen.gov.tw/cp.aspx?n=6503) informs its roof form; positions and bounds follow the OSM extract. Building tile filenames include a content hash, preventing mismatched cached geometry after data regeneration.
