@@ -28,6 +28,7 @@
       <label for="time">Light <span id="time-label">Golden hour</span></label><input id="time" type="range" min="0" max="100" value="38" /><div class="range-labels"><span>Late afternoon</span><span>Blue hour</span></div>
       <label for="volume">Soundscape <span id="volume-label">55%</span></label><input id="volume" type="range" min="0" max="100" value="55" />
       <label for="quality">Render detail</label><select id="quality"><option value="balanced">Balanced</option><option value="high">High</option><option value="low">Battery saver</option></select>
+      <label class="switch-row">Street activity <input id="life-toggle" type="checkbox" checked /></label>
       <label class="switch-row">Place labels <input id="labels-toggle" type="checkbox" checked /></label>
       <p class="panel-note">Real streets & building footprints. Estimated heights where map data is missing. Atmospheric lighting and facades are interpretive.</p>
     </aside>
@@ -42,7 +43,7 @@
       <p>Let the evening take you somewhere.</p>
       <button id="tour" class="primary"><span id="tour-label">Take the scenic route</span><span id="tour-icon">↗</span></button>
     </section>
-    <aside class="location-card"><div class="location-top"><span class="eyebrow">YOUR VIEW</span><span id="view-index">01 / 06</span></div><h2 id="place-title">Taipei 101</h2><p id="place-description">Above Xinyi, where the city meets the sky.</p><div class="location-meta"><span id="altitude">850 M</span><span id="heading">NW</span><span class="sun-icon">◒ <span id="light-state">GOLDEN HOUR</span></span></div></aside>
+    <aside class="location-card"><div class="location-top"><span class="eyebrow">YOUR VIEW</span><span id="view-index">01 / 06</span></div><h2 id="place-title">Taipei 101</h2><p id="place-description">Above Xinyi, where the city meets the sky.</p><div class="location-meta"><span id="altitude">850 M</span><span id="heading">NW</span><span class="sun-icon">◒ <span id="light-state">GOLDEN HOUR</span></span></div><button id="street-view" class="street-view">Explore at street level <span>↓</span></button></aside>
     <nav class="places" aria-label="Explore Taipei viewpoints">
       <div class="places-label">GO SOMEWHERE<span>探索台北</span></div>
       <button class="place active" data-place="0"><span class="place-number">01</span><span>Taipei 101<small>台北 101</small></span><span class="place-arrow">↗</span></button>

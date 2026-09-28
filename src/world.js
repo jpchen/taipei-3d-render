@@ -42,15 +42,23 @@ export async function loadBuildings(scene,manifest,material,progress){
  const mesh=new THREE.Mesh(g,material);mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);progress(++done/manifest.length);await new Promise(resolve=>setTimeout(resolve,0));}}));
 }
 const widths={motorway:22,trunk:20,primary:21,secondary:16,tertiary:12,residential:7,unclassified:6,living_street:5};
-function ribbon(points,width,yOffset=0){const p=[],uv=[],idx=[];for(let i=0;i<points.length;i++){const a=points[Math.max(0,i-1)],b=points[Math.min(points.length-1,i+1)],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz)||1;const c=points[i],nx=-dz/len*width/2,nz=dx/len*width/2;p.push(c[0]+nx,c[2]+yOffset,c[1]+nz,c[0]-nx,c[2]+yOffset,c[1]-nz);uv.push(0,i,1,i);if(i)idx.push(i*2-2,i*2,i*2-1,i*2-1,i*2,i*2+1);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;}
+function ribbon(points,width,yOffset=0,terrain=null,bridge=false){
+ const samples=[];let length=0;
+ for(let i=0;i<points.length-1;i++){const a=points[i],b=points[i+1],distance=Math.hypot(b[0]-a[0],b[1]-a[1]),steps=terrain?Math.max(1,Math.ceil(distance/10)):1;for(let j=0;j<steps;j++){const f=j/steps;samples.push([THREE.MathUtils.lerp(a[0],b[0],f),THREE.MathUtils.lerp(a[1],b[1],f),THREE.MathUtils.lerp(a[2],b[2],f),length+distance*f]);}length+=distance;}
+ samples.push([...points.at(-1),length]);const p=[],uv=[],idx=[];
+ for(let i=0;i<samples.length;i++){const a=samples[Math.max(0,i-1)],b=samples[Math.min(samples.length-1,i+1)],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz)||1,c=samples[i],nx=-dz/len*width/2,nz=dx/len*width/2;
+ for(const side of [1,-1]){const x=c[0]+nx*side,z=c[1]+nz*side,y=terrain&&!bridge?terrainHeight(terrain,x,z):c[2];p.push(x,y+yOffset,z);}uv.push(0,c[3]/9,1,c[3]/9);if(i)idx.push(i*2-2,i*2,i*2-1,i*2-1,i*2,i*2+1);}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;
+}
 function polygon(points,yOffset=0){let contour=points.map(p=>new THREE.Vector2(p[0],p[1]));if(contour.length<3)return null;let triangles=THREE.ShapeUtils.triangulateShape(contour,[]);const pos=points.flatMap(p=>[p[0],p[2]+yOffset,p[1]]),g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(triangles.flatMap(t=>[t[2],t[1],t[0]]));g.computeVertexNormals();return g;}
-function addMerged(scene,geos,mat){if(!geos.length)return;geos.forEach(g=>g.deleteAttribute('uv'));const g=mergeGeometries(geos);geos.forEach(g=>g.dispose());const mesh=new THREE.Mesh(g,mat);mesh.receiveShadow=true;scene.add(mesh);return mesh;}
-export function makeStreets(scene,data){
- const roads=[],lines=[],bridges=[],parkGeo=[],waters=[],traffic=[];
- for(const road of data.roads){if(road.p.length<2)continue;const w=widths[road.k]||8;const offset=road.bridge?10:.8;const g=ribbon(road.p,w,offset);(road.bridge?bridges:roads).push(g);
- if(w>=12){lines.push(ribbon(road.p,.38,offset+.06));if(road.p.length>2)traffic.push(road);}}
+function addMerged(scene,geos,mat){if(!geos.length)return;if(geos.some(g=>!g.attributes.uv))geos.forEach(g=>g.deleteAttribute('uv'));const g=mergeGeometries(geos);geos.forEach(g=>g.dispose());const mesh=new THREE.Mesh(g,mat);mesh.receiveShadow=true;scene.add(mesh);return mesh;}
+export function makeStreets(scene,data,terrain){
+ const roads=[],lines=[],bridges=[],sidewalks=[],parkGeo=[],waters=[],traffic=[];
+ for(const road of data.roads){if(road.p.length<2)continue;const w=widths[road.k]||8;const offset=road.bridge?10:.24;const g=ribbon(road.p,w,offset,terrain,road.bridge);if(!road.bridge)sidewalks.push(ribbon(road.p,w+4,.13,terrain));(road.bridge?bridges:roads).push(g);
+ if(w>=12){lines.push(ribbon(road.p,.25,offset+.06,terrain,road.bridge));if(road.p.length>2)traffic.push(road);}}
+ addMerged(scene,sidewalks,new THREE.MeshStandardMaterial({color:'#b8ad92',roughness:1,side:THREE.DoubleSide}));
  const asphalt=new THREE.MeshStandardMaterial({color:'#454c49',roughness:.96,side:THREE.DoubleSide});addMerged(scene,roads,asphalt);addMerged(scene,bridges,asphalt);
- addMerged(scene,lines,new THREE.MeshStandardMaterial({color:'#b2a67d',roughness:1,side:THREE.DoubleSide}));
+ const stripe=new Uint8Array(4*64);for(let i=0;i<64;i++)stripe.set([255,255,255,i<32?255:0],i*4);const texture=new THREE.DataTexture(stripe,1,64);texture.wrapT=THREE.RepeatWrapping;texture.needsUpdate=true;addMerged(scene,lines,new THREE.MeshStandardMaterial({color:'#e1c787',map:texture,alphaTest:.5,roughness:1,side:THREE.DoubleSide}));
  for(const p of data.parks){const g=polygon(p,1.1);if(g)parkGeo.push(g);}addMerged(scene,parkGeo,new THREE.MeshStandardMaterial({color:'#354b32',roughness:1,side:THREE.DoubleSide}));
  for(const water of data.water){let p=water.p.map(p=>[p[0],p[1],2]);if(water.river)waters.push(ribbon(p,water.name?.includes('基隆')?140:230,.2));else {let g=polygon(p,.2);if(g)waters.push(g);}}
  const waterMat=new THREE.MeshStandardMaterial({color:'#537c77',metalness:.62,roughness:.22,side:THREE.DoubleSide});
@@ -81,9 +89,8 @@ export function addMemorial(scene,terrain){
  const cap=new THREE.Mesh(new THREE.ConeGeometry(24,13,8),blue);cap.position.y=64;cap.rotation.y=Math.PI/8;group.add(cap);
  for(const dz of [-145,145]){const hall=new THREE.Group();hall.position.set(-220,0,dz);let base=new THREE.Mesh(new THREE.BoxGeometry(110,20,65),new THREE.MeshStandardMaterial({color:'#a26143'}));base.position.y=10;hall.add(base);const roof=new THREE.Mesh(new THREE.ConeGeometry(76,22,4),new THREE.MeshStandardMaterial({color:'#ab8650'}));roof.scale.z=.65;roof.rotation.y=Math.PI/4;roof.position.y=30;hall.add(roof);group.add(hall);}scene.add(group);
 }
-export function createTraffic(scene,roads){
- const paths=roads.filter(r=>r.p.length>3).slice(0,650);let seed=42;const rand=()=>((seed=seed*16807%2147483647)-1)/2147483646;
- const vehicles=[];for(let i=0;i<480;i++){const road=paths[Math.floor(rand()*paths.length)];if(!road)continue;let points=road.p.map(p=>new THREE.Vector3(p[0],p[2]+(road.bridge?11:1.7),p[1]));const curve=new THREE.CatmullRomCurve3(points);vehicles.push({curve,t:rand(),speed:8+rand()*7,length:curve.getLength(),reverse:rand()>.5});}
- const mat=new THREE.MeshStandardMaterial({color:'#d1b788',emissive:'#ff9e40',emissiveIntensity:.4}),mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1.8,1.4,4),mat,vehicles.length),o=new THREE.Object3D();mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);scene.add(mesh);
- return dt=>{vehicles.forEach((v,i)=>{v.t=(v.t+dt*v.speed/Math.max(v.length,1))%1;const p=v.curve.getPointAt(v.t),t=v.curve.getTangentAt(v.t);o.position.copy(p);o.position.x+=2;o.rotation.y=Math.atan2(t.x,t.z);o.updateMatrix();mesh.setMatrixAt(i,o.matrix);});mesh.instanceMatrix.needsUpdate=true;};
+
+export function makeFootways(scene,routes,terrain){
+ const geos=routes.filter(r=>r.k==='walk').map(r=>ribbon(r.p,2.1,.28,terrain));
+ addMerged(scene,geos,new THREE.MeshStandardMaterial({color:'#bcad8c',roughness:1,side:THREE.DoubleSide}));
 }

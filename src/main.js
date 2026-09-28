@@ -8,11 +8,12 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { TaipeiAudio } from './audio.js';
 import { createAtmosphere } from './atmosphere.js';
-import { project,terrainHeight,makeTerrain,buildingMaterial,loadBuildings,makeStreets,makeTrees,addTaipei101,addMemorial,createTraffic } from './world.js';
+import { createCityLife } from './activity.js';
+import { project,terrainHeight,makeTerrain,buildingMaterial,loadBuildings,makeStreets,makeTrees,addTaipei101,addMemorial } from './world.js';
 
 const $=s=>document.querySelector(s), reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const audio=new TaipeiAudio(),dusk={value:.45};
-let renderer,terrain,controls,scene,camera,composer,sky,atmosphere,sunLight,hemi,water,updateTraffic=()=>{},ready=false,activePlace=0,flight=null,touring=false,tourElapsed=0,interactionTimer,frame=0;
+let renderer,terrain,controls,scene,camera,composer,sky,atmosphere,sunLight,hemi,water,cityLife=null,ready=false,activePlace=0,flight=null,touring=false,tourElapsed=0,interactionTimer,frame=0;
 const keys=new Set(),labels=[],sun=new THREE.Vector3();
 let previousTime=performance.now(),elapsedTime=0;
 const locations=[
@@ -55,11 +56,11 @@ async function init(){
   progress(.08,'Reading streets, parks & mountain contours');
   const [mapResponse,terrainResponse]=await Promise.all([fetch('/data/city.json'),fetch('/data/terrain.json')]);if(!mapResponse.ok||!terrainResponse.ok)throw Error('Map files could not be loaded.');const data=await mapResponse.json();terrain=await terrainResponse.json();
   makeTerrain(scene,terrain);progress(.16,'Following the rivers through the city');await new Promise(r=>setTimeout(r,20));
-  const streets=makeStreets(scene,data);water=streets.waterMat;progress(.22,'Planting the parks and wooded hills');await new Promise(r=>setTimeout(r,20));
+  const streets=makeStreets(scene,data,terrain);water=streets.waterMat;progress(.22,'Planting the parks and wooded hills');await new Promise(r=>setTimeout(r,20));
   makeTrees(scene,data.parks,terrain);addMemorial(scene,terrain);await addTaipei101(scene,terrain);progress(.3,'Building Taipei’s skyline');
   await loadBuildings(scene,data.buildings,buildingMaterial(dusk),v=>progress(.3+v*.65,`Building Taipei’s skyline · ${Math.round(v*100)}%`));
-  updateTraffic=createTraffic(scene,streets.traffic);setupLabels();$('#data-stats').textContent=`${data.count.toLocaleString()} buildings · ${data.known.toLocaleString()} mapped heights · ${data.roads.length.toLocaleString()} street segments. Map snapshot: ${data.date.slice(0,10)}.`;
-  renderer.shadowMap.needsUpdate=true;ready=true;selectPlace(0,true);progress(1,'Welcome to Taipei.');animate();await new Promise(r=>setTimeout(r,350));$('#loading').classList.add('done');setTimeout(()=>$('#loading').remove(),1200);window.__taipei={get ready(){return ready},renderer,scene,camera,controls,get place(){return activePlace},get touring(){return touring},audio,stats:{buildings:data.count,known:data.known}};
+  cityLife=await createCityLife(scene,dusk,{reducedMotion,terrain});setupLabels();$('#data-stats').textContent=`${data.count.toLocaleString()} buildings · ${data.known.toLocaleString()} mapped heights · ${data.roads.length.toLocaleString()} street segments. Map snapshot: ${data.date.slice(0,10)}.`;
+  renderer.shadowMap.needsUpdate=true;ready=true;selectPlace(0,true);progress(1,'Welcome to Taipei.');animate();await new Promise(r=>setTimeout(r,350));$('#loading').classList.add('done');setTimeout(()=>$('#loading').remove(),1200);window.__taipei={get ready(){return ready},renderer,scene,camera,controls,get place(){return activePlace},get touring(){return touring},audio,activity:cityLife,stats:{buildings:data.count,known:data.known}};
  }catch(e){console.error(e);$('#loading-message').textContent=`${e.message} Please reload to try again.`;$('#loading p').textContent='The city couldn’t load.';const retry=document.createElement('button');retry.className='primary';retry.textContent='Try again';retry.style.marginTop='24px';retry.onclick=()=>location.reload();$('#loading').appendChild(retry);}
 }
 function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min((now-previousTime)/1000,.05);previousTime=now;elapsedTime+=dt;const time=elapsedTime;frame++;
@@ -67,11 +68,13 @@ function animate(){requestAnimationFrame(animate);const now=performance.now(),dt
  if(keys.size&&!flight){const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();const right=new THREE.Vector3().crossVectors(forward,camera.up),delta=new THREE.Vector3();let speed=dt*(keys.has('shift')?650:190);if(keys.has('w')||keys.has('arrowup'))delta.add(forward);if(keys.has('s')||keys.has('arrowdown'))delta.sub(forward);if(keys.has('d')||keys.has('arrowright'))delta.add(right);if(keys.has('a')||keys.has('arrowleft'))delta.sub(right);if(keys.has('e'))delta.y+=1;if(keys.has('q'))delta.y-=1;delta.multiplyScalar(speed);camera.position.add(delta);controls.target.add(delta);}
  camera.position.x=THREE.MathUtils.clamp(camera.position.x,-10500,14000);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-16000,11500);camera.position.y=THREE.MathUtils.clamp(camera.position.y,terrainHeight(terrain,camera.position.x,camera.position.z)+14,13000);controls.target.y=Math.max(0,controls.target.y);controls.update();
  if(touring){tourElapsed+=dt;if(tourElapsed>19){tourElapsed=0;selectPlace((activePlace+1)%locations.length);}}
- if(water?.userData.shader)water.userData.shader.uniforms.uTime.value=time;if(frame%2===0)updateTraffic(dt*2);
+ if(water?.userData.shader)water.userData.shader.uniforms.uTime.value=time;cityLife?.update(time,camera,controls.target,$('#quality').value);
  if(frame%8===0){updateLabels();audio.update(camera.position.y);$('#altitude').textContent=`${Math.round(camera.position.y).toLocaleString()} M`;const dir=new THREE.Vector3();camera.getWorldDirection(dir);let degrees=(THREE.MathUtils.radToDeg(Math.atan2(dir.x,-dir.z))+360)%360;$('#heading').textContent=['N','NE','E','SE','S','SW','W','NW'][Math.round(degrees/45)%8];}
  composer.render();
 }
 $('#audio-toggle').addEventListener('click',async()=>{try{const enabled=await audio.toggle();$('#audio-toggle').setAttribute('aria-pressed',String(enabled));$('#audio-toggle').setAttribute('aria-label',enabled?'Mute ambient sound':'Enable ambient sound');$('#audio-label').textContent=enabled?'Sound on':'Sound off';toast(enabled?'Wind, distant traffic & birds · an original soundscape':'Soundscape paused');}catch(e){toast('Audio is unavailable in this browser.');console.error(e);}});
+$('#life-toggle').addEventListener('change',e=>cityLife?.setEnabled(e.target.checked));
+$('#street-view').onclick=()=>{if(!cityLife)return;const view=cityLife.streetView(controls.target);if(!view)return;interacted();flight={start:performance.now(),duration:3000,from:camera.position.clone(),fromTarget:controls.target.clone(),...view};toast('Street view · middle-drag to move, scroll to get closer');};
 $('#volume').addEventListener('input',e=>{audio.setVolume(+e.target.value/100);$('#volume-label').textContent=`${e.target.value}%`;});
 $('#time').addEventListener('input',e=>setLight(+e.target.value));$('#quality').addEventListener('change',e=>setQuality(e.target.value));$('#labels-toggle').addEventListener('change',e=>$('#landmark-labels').hidden=!e.target.checked);
 function panel(id){const open=$(`#${id}`).hidden;$('#settings').hidden=true;$('#help').hidden=true;$(`#${id}`).hidden=!open;$('#settings-toggle').setAttribute('aria-expanded',String(!$('#settings').hidden));}

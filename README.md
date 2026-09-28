@@ -56,3 +56,7 @@ Browser tests check successful WebGL loading, viewpoint movement, orbit and keyb
 - Terrain: [Mapzen Terrain Tiles on AWS](https://registry.opendata.aws/terrain-tiles/), accessed 2026-09-27. Global GMTED2010 and SRTM data courtesy of the U.S. Geological Survey; global ETOPO1 data from NOAA. [Full provider attribution](https://github.com/tilezen/joerd/blob/master/docs/attribution.md).
 - Three.js: MIT. Blender-generated landmark geometry and the sound synthesis code are original to this project.
 - DM Sans and Manrope: SIL Open Font License, served through Google Fonts with system fallbacks.
+
+## Street activity
+
+Middle-drag pans; the **Explore at street level** button moves to a nearby mapped road. Cars, buses, scooters and walking people share four instanced prototypes (at most four activity draw calls). Vehicles follow road direction and right-hand lanes; people follow mapped footways. Spatial indexing limits simulation to nearby routes. Pedestrians disappear beyond 520 m (230 m in battery saver), vehicles beyond 3 km (1.8 km in battery saver), and offscreen instances are culled. Instance updates are capped at 30 Hz / 15 Hz; walking motion runs in the vertex shader. Activity pauses in hidden tabs and respects reduced-motion preferences. Settings can disable it altogether. `npm run data:activity` regenerates route data; the additional OSM footway extract is in `assets/walkways-source.json`.
