@@ -7,3 +7,5 @@
 
 /* Keep the city visible during exploration instead of covering it with a dark wash. */
 .vignette{background:linear-gradient(180deg,rgba(28,35,38,.16),transparent 23%,transparent 46%,rgba(32,35,28,.10) 68%,rgba(13,25,24,.82) 100%);transition:opacity .5s}body.exploring .vignette{opacity:.63}.brand{text-shadow:0 1px 8px #27342d55}.header-center{text-shadow:0 1px 5px #243a34}.location-card{text-shadow:0 1px 8px #1a2b2580}footer{color:#cbd2bcbd}@media(max-width:650px){.vignette{background:linear-gradient(180deg,#23373433,transparent 25%,transparent 43%,#28352911 65%,#142824e8 100%)}}
+
+.places{cursor:grab;user-select:none;touch-action:pan-x;overscroll-behavior-x:contain}.places .place{flex:0 0 164px;cursor:grab}.places.dragging,.places.dragging .place{cursor:grabbing}.places-label{flex-shrink:0}

@@ -1,4 +1,5 @@
 import './style.css';
+import {enableDestinationScroll} from './destination-scroll.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -32,6 +33,7 @@ function progress(value,message){$('#progress-bar').style.width=`${Math.round(va
 function destination(index){const place=locations[index];if(place.market&&market)return market.destination();const origin=project(place.lon,place.lat),target=place.look?project(...place.look):origin.clone();target.y=place.target;const pos=origin.clone().add(new THREE.Vector3(...place.offset));pos.y=Math.max(pos.y,terrainHeight(terrain,pos.x,pos.z)+80);return{pos,target};}
 function selectPlace(index,instant=false){if(!ready)return;activePlace=index;const p=locations[index],d=destination(index);$('#place-title').textContent=p.name;$('#place-description').textContent=p.description;$('#view-index').textContent=`0${index+1} / ${String(locations.length).padStart(2,'0')}`;
  document.querySelectorAll('[data-place]').forEach((b,i)=>{b.classList.toggle('active',i===index);b.setAttribute('aria-current',i===index?'location':'false');});
+ document.querySelector(`[data-place="${index}"]`)?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
  if(instant||reducedMotion){camera.position.copy(d.pos);controls.target.copy(d.target);controls.update();flight=null;}
  else{flight={start:performance.now(),duration:3600,from:camera.position.clone(),fromTarget:controls.target.clone(),...d};}
 }
@@ -78,4 +80,5 @@ $('#settings-toggle').onclick=()=>panel('settings');$('#help-toggle').onclick=()
 $('#tour').onclick=()=>{if(ready)setTour(!touring);};document.querySelectorAll('[data-place]').forEach(b=>b.onclick=()=>{if(touring)setTour(false);selectPlace(+b.dataset.place);document.body.classList.add('exploring');clearTimeout(interactionTimer);interactionTimer=setTimeout(()=>document.body.classList.remove('exploring'),16000);});
 $('#credits-toggle').onclick=()=>$('#credits').showModal();$('#credits-close').onclick=()=>$('#credits').close();$('#credits').addEventListener('click',e=>{if(e.target===$('#credits')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});
 window.addEventListener('resize',resize);window.addEventListener('keydown',e=>{if(e.key==='Escape'){if(touring)setTour(false);$('#settings').hidden=true;$('#help').hidden=true;$('#settings-toggle').setAttribute('aria-expanded','false');return;}if(['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)||$('#credits').open)return;const key=e.key.toLowerCase();if(['w','a','s','d','q','e','shift','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){e.preventDefault();keys.add(key);interacted();}if(key==='r'){if(touring)setTour(false);selectPlace(0);document.body.classList.remove('exploring');}if(key==='escape'){if(touring)setTour(false);$('#settings').hidden=true;$('#help').hidden=true;}});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());
+enableDestinationScroll($('.places'));
 init();
