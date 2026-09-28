@@ -21,7 +21,7 @@ npx wrangler login
 npm run deploy
 ```
 
-`wrangler.jsonc` targets the existing Cloudflare account and the custom domain `taipei.jonathanpchen.com`. No API keys or secrets are included. The repository is private; the deployed website is public.
+`wrangler.jsonc` targets the existing Cloudflare account and the custom domain `taipei.jonathanpchen.com`. No API keys or secrets are included. The repository and deployed website are public.
 
 ## Data and asset pipeline
 
