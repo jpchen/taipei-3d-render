@@ -96,3 +96,7 @@ The river surface uses mipmapped procedural ripple normals advected over geograp
 The eighth destination visits a dedicated Grand Hotel Blender model (`assets/grand-hotel.blend`; regenerate with `npm run models:hotel`). It replaces the generic OSM hotel extrusion at the mapped position and orientation, with 14 floors, vermilion columns, railings, decorative brackets, twin swept golden roofs and a double-eaved entrance. The exterior is an artistic interpretation based on the [hotel's official description](https://www.grand-hotel.org/EN/official/main.aspx) and [exterior reference photograph](https://www.sinko.co.jp/global_products/deliveryex/img/country/img_taiwan01.jpg). It is combined into six material batches.
 
 The destination strip supports left- or middle-mouse dragging, native touch swipes, and keyboard activation. Drag gestures suppress accidental destination clicks; normal clicks still work. Selecting or touring a destination scrolls its button into view.
+
+## Link previews
+
+Open Graph and Twitter large-image metadata are in the initial HTML, so link crawlers do not need to run WebGL. The 1200×630 preview is an actual render of Taipei 101 and the surrounding buildings. Start the local server on port 5188 and run `npm run social:capture` to regenerate it, or set `CAPTURE_URL` to another running deployment.
