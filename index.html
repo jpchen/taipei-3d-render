@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#202c2b" />
+  <meta name="description" content="Drift above Taipei at golden hour. An interactive 3D city with real streets, mountain terrain, Taipei 101 and an immersive ambient soundscape." />
+  <title>Taipei at dusk — an explorable city</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+</head>
+<body>
+  <main id="app">
+    <div id="scene" aria-label="Interactive 3D map of Taipei. Drag to orbit, scroll to zoom, or use the viewpoint buttons."></div>
+    <div class="vignette"></div>
+    <header>
+      <a class="brand" href="/" aria-label="Taipei at dusk home"><span class="brand-mark">台<br>北</span><span>TAIPEI<span class="brand-sub">AT DUSK</span></span></a>
+      <div class="header-center"><span class="live-dot"></span> A LITTLE CLOSER TO HERE</div>
+      <div class="tools">
+        <button id="audio-toggle" class="tool" aria-label="Enable ambient sound" aria-pressed="false"><span id="audio-icon">♫</span><span id="audio-label">Sound off</span></button>
+        <button id="settings-toggle" class="tool square" aria-label="Open scene settings" aria-expanded="false">☷</button>
+        <button id="help-toggle" class="tool square" aria-label="Navigation help">?</button>
+      </div>
+    </header>
+    <div id="loading" role="status"><div class="loading-symbol">台北</div><p>Finding the last light.</p><span id="loading-message">Preparing Taipei’s streets & skyline</span><div class="progress"><i id="progress-bar"></i></div></div>
+    <div id="landmark-labels" aria-hidden="true"></div>
+    <aside id="settings" class="panel" hidden>
+      <div class="panel-heading">Make yourself at home<button class="close" data-close="settings" aria-label="Close settings">×</button></div>
+      <label for="time">Light <span id="time-label">Golden hour</span></label><input id="time" type="range" min="0" max="100" value="38" /><div class="range-labels"><span>Late afternoon</span><span>Blue hour</span></div>
+      <label for="volume">Soundscape <span id="volume-label">55%</span></label><input id="volume" type="range" min="0" max="100" value="55" />
+      <label for="quality">Render detail</label><select id="quality"><option value="balanced">Balanced</option><option value="high">High</option><option value="low">Battery saver</option></select>
+      <label class="switch-row">Place labels <input id="labels-toggle" type="checkbox" checked /></label>
+      <p class="panel-note">Real streets & building footprints. Estimated heights where map data is missing. Atmospheric lighting and facades are interpretive.</p>
+    </aside>
+    <aside id="help" class="panel" hidden>
+      <div class="panel-heading">Find your own way<button class="close" data-close="help" aria-label="Close navigation help">×</button></div>
+      <dl><dt>Look around</dt><dd>Drag with your mouse or one finger</dd><dt>Move across the city</dt><dd>Right-drag, two-finger drag, or WASD</dd><dt>Get closer</dt><dd>Scroll or pinch</dd><dt>Change altitude</dt><dd>Q / E · Hold Shift to move faster</dd><dt>Reset the view</dt><dd>Press R or choose a place below</dd></dl>
+      <p class="panel-note">Explore freely from above. The guided tour drifts between six places. Press Escape to stop the tour or close a panel.</p>
+    </aside>
+    <section id="intro" class="intro">
+      <div class="eyebrow"><span class="live-dot"></span> TAIWAN · 25°02′ N 121°33′ E</div>
+      <h1>A city between<br>mountains <em>& light.</em></h1>
+      <p>Let the evening take you somewhere.</p>
+      <button id="tour" class="primary"><span id="tour-label">Take the scenic route</span><span id="tour-icon">↗</span></button>
+    </section>
+    <aside class="location-card"><div class="location-top"><span class="eyebrow">YOUR VIEW</span><span id="view-index">01 / 06</span></div><h2 id="place-title">Taipei 101</h2><p id="place-description">Above Xinyi, where the city meets the sky.</p><div class="location-meta"><span id="altitude">850 M</span><span id="heading">NW</span><span class="sun-icon">◒ <span id="light-state">GOLDEN HOUR</span></span></div></aside>
+    <nav class="places" aria-label="Explore Taipei viewpoints">
+      <div class="places-label">GO SOMEWHERE<span>探索台北</span></div>
+      <button class="place active" data-place="0"><span class="place-number">01</span><span>Taipei 101<small>台北 101</small></span><span class="place-arrow">↗</span></button>
+      <button class="place" data-place="1"><span class="place-number">02</span><span>Elephant Mountain<small>象山</small></span><span class="place-arrow">↗</span></button>
+      <button class="place" data-place="2"><span class="place-number">03</span><span>Daan Forest Park<small>大安森林公園</small></span><span class="place-arrow">↗</span></button>
+      <button class="place" data-place="3"><span class="place-number">04</span><span>Liberty Square<small>自由廣場</small></span><span class="place-arrow">↗</span></button>
+      <button class="place" data-place="4"><span class="place-number">05</span><span>Tamsui River<small>淡水河</small></span><span class="place-arrow">↗</span></button>
+      <button class="place" data-place="5"><span class="place-number">06</span><span>Songshan<small>松山</small></span><span class="place-arrow">↗</span></button>
+    </nav>
+    <footer><span class="navigation-hint">DRAG TO EXPLORE <i>·</i> SCROLL TO WANDER</span><button id="credits-toggle">Three.js + Blender <i>·</i> Map & terrain credits</button><span class="footer-end">STAY A LITTLE LONGER ↗</span></footer>
+    <div id="toast" role="status"></div>
+    <dialog id="credits"><button class="close" id="credits-close" aria-label="Close credits">×</button><div class="eyebrow">BUILT FROM A REAL PLACE</div><h2>Taipei, interpreted.</h2><p>Street paths, building footprints, parks and waterways come from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>, available under the Open Database License. <a href="/data/city.json" download>Download the derived map data</a>.</p><p>Terrain is sampled from <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noreferrer">Mapzen Terrain Tiles on AWS</a>, using global elevation data. SRTM and GMTED2010 data courtesy of the U.S. Geological Survey; ETOPO1 data from NOAA. <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noreferrer">Terrain source attribution</a>.</p><p>Taipei 101 is modeled in Blender at its 508 m height. Other buildings use mapped heights where available, with estimates elsewhere. Facades, vegetation, architectural details and the synthesized soundscape are artistic approximations. This is an atmospheric city model, not a photographic or survey reconstruction.</p><p id="data-stats"></p></dialog>
+  </main>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

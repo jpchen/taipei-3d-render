@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "taipei-at-dusk",
+  "account_id": "f96afd935ce2cf383c0baabb30229ef2",
+  "compatibility_date": "2026-09-27",
+  "assets": { "directory": "./dist" },
+  "routes": [{ "pattern": "taipei.jonathanpchen.com", "custom_domain": true }],
+  "workers_dev": true
+}
