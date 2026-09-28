@@ -86,3 +86,7 @@ The seventh destination opens along mapped Dadong Road at Shilin Night Market. F
 People are denser on mapped park paths and market lanes, reusing the same animated person geometry. Pedestrians are capped at 1,400 instances (630 in battery saver), within the existing four activity draw calls. Market lanes exclude simulated vehicle traffic. Park tree placement leaves walking paths clear. This is lightweight procedural city life, not a crowd or traffic simulation.
 
 Pavement is split along the actual terrain mesh triangles, eliminating buried segments caused by mismatched interpolation. Rounded joins cover road endpoints without creating extra drawing batches.
+
+## River reflections
+
+The river surface uses mipmapped procedural ripple normals advected over geographic coordinates. A shared 512×512 planar reflection captures the sky, terrain, buildings and landmarks at up to 8 Hz (12 Hz in high quality); small instanced details are omitted from the reflection pass. Battery saver uses an animated sky-color reflection without a second scene render. Reduced motion freezes the ripple animation. Waterway widths remain approximate where the map snapshot contains river centerlines rather than bank polygons.

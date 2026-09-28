@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createRiverWater} from './water.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 export const project=(lon,lat)=>new THREE.Vector3((lon-121.54)*100800,0,(25.05-lat)*111320);
@@ -37,10 +38,8 @@ export function makeStreets(scene,data,terrain){
  const stripe=new Uint8Array(4*64);for(let i=0;i<64;i++)stripe.set([255,255,255,i<32?255:0],i*4);const texture=new THREE.DataTexture(stripe,1,64);texture.wrapT=THREE.RepeatWrapping;texture.needsUpdate=true;addMerged(scene,lines,new THREE.MeshStandardMaterial({color:'#e1c787',map:texture,alphaTest:.5,roughness:1,side:THREE.DoubleSide}));
  for(const p of data.parks){const g=polygon(p);if(g)parkGeo.push(drapeGeometry(g,terrain,.04));}addMerged(scene,parkGeo,new THREE.MeshStandardMaterial({color:'#354b32',roughness:1,side:THREE.DoubleSide}));
  for(const water of data.water){let p=water.p.map(p=>[p[0],p[1],2]);if(water.river)waters.push(ribbon(p,water.name?.includes('基隆')?140:230,.2));else {let g=polygon(p,.2);if(g)waters.push(g);}}
- const waterMat=new THREE.MeshStandardMaterial({color:'#537c77',metalness:.62,roughness:.22,side:THREE.DoubleSide});
- waterMat.onBeforeCompile=s=>{s.uniforms.uTime={value:0};waterMat.userData.shader=s;s.vertexShader='varying vec3 vWater;\n'+s.vertexShader;s.vertexShader=s.vertexShader.replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvWater=(modelMatrix*vec4(transformed,1.0)).xyz;');s.fragmentShader='varying vec3 vWater;uniform float uTime;\n'+s.fragmentShader;s.fragmentShader=s.fragmentShader.replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>\nnormal=normalize(normal+vec3(sin(vWater.x*.12+uTime)*.045,0.0,cos(vWater.z*.15+uTime*.7)*.045));');};
- addMerged(scene,waters,waterMat);
- return {waterMat,traffic};
+ waters.forEach(g=>g.deleteAttribute('uv'));const geometry=mergeGeometries(waters);waters.forEach(g=>g.dispose());const river=createRiverWater(geometry);scene.add(river.mesh);
+ return {river,traffic};
 }
 function inside(x,z,poly){let yes=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])yes=!yes;}return yes;}
 export function makeTrees(scene,parks,terrain,walkways=[]){
