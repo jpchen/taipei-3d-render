@@ -2,16 +2,17 @@ import { readFile, writeFile, mkdir, rename, readdir, unlink } from 'node:fs/pro
 import { ShapeUtils, Vector2, Color } from 'three';
 import { gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
+import {terrainHeight} from '../src/terrain.js';
 
 const raw=JSON.parse(await readFile('public/data/taipei.json','utf8').catch(()=>readFile('assets/map-source.json','utf8')));
 const terrain=JSON.parse(await readFile('public/data/terrain.json','utf8'));
 const project=([lon,lat])=>[(lon-121.54)*100800,(25.05-lat)*111320];
-const elev=([lon,lat])=>{const {bounds:b,n,heights:h}=terrain;const u=Math.max(0,Math.min(n-.001,(lon-b[0])/(b[2]-b[0])*n)),v=Math.max(0,Math.min(n-.001,(b[3]-lat)/(b[3]-b[1])*n)),i=Math.floor(u),j=Math.floor(v),fx=u-i,fz=v-j;return Math.max(1,(h[j*(n+1)+i]*(1-fx)+h[j*(n+1)+i+1]*fx)*(1-fz)+(h[(j+1)*(n+1)+i]*(1-fx)+h[(j+1)*(n+1)+i+1]*fx)*fz-12);};
+const elev=point=>{const [x,z]=project(point);return terrainHeight(terrain,x,z);};
 const random=n=>{const x=Math.sin(n*12.9898+78.233)*43758.5453;return x-Math.floor(x);};
 const palettes=[
- ['#d6c6a4','#c5a89d','#aec2ae','#e0cbae','#bea58a','#b8c8c2','#d9bb98'], // plaster and painted concrete
+ ['#d6c6a4','#c5a89d','#aec2ae','#e0cbae','#bea58a','#b8c8c2','#d9bb98','#c9ceca','#9eaaa5'], // plaster and painted concrete
  ['#60979c','#7297b1','#528d91','#8daba8','#497b8a','#819db2'], // glass curtain walls
- ['#d6c2ac','#c99f8d','#c0c9bb','#e3d5bb','#b9afa3','#c4b298'], // ceramic-tile apartments
+ ['#d6c2ac','#c99f8d','#c0c9bb','#e3d5bb','#b9afa3','#c4b298','#bbc5c7','#9fa9a1'], // ceramic-tile apartments
  ['#a86049','#ae7159','#bd8062','#916952'], // brick / heritage
  ['#97a9a2','#a8b3bc','#bbbdad','#839fa4'], // industrial
  ['#decaa0','#c19a77','#e1c8a4','#d3b992'], // traditional / civic
@@ -66,17 +67,19 @@ for(const {t,p,id} of raw.elements){
   const start=g.pos.length/3;for(const a of poly)v(a.x,ground+height,a.y,0,1,0,a.x,a.y,true);
   for(const tri of ShapeUtils.triangulateShape(poly,[]))g.idx.push(start+tri[2],start+tri[1],start+tri[0]);
  }
- let longest={length:0};
+ let longest={length:0};const walls=[];
  for(let j=0;j<poly.length;j++){
   const a=poly[j],b=poly[(j+1)%poly.length],dx=b.x-a.x,dz=b.y-a.y,len=Math.hypot(dx,dz);if(len<.01)continue;
-  const k=v(a.x,ground,a.y,dz/len,0,-dx/len,0,0);v(b.x,ground,b.y,dz/len,0,-dx/len,len,0);v(b.x,ground+wallHeight,b.y,dz/len,0,-dx/len,len,wallHeight);v(a.x,ground+wallHeight,a.y,dz/len,0,-dx/len,0,wallHeight);g.idx.push(k,k+2,k+1,k,k+3,k+2);
+  const columns=Math.max(1,Math.round(len/(2.7+seed*1.5))),floors=Math.max(1,Math.round(wallHeight/(3.05+seed*.55)));
+  const k=v(a.x,ground,a.y,dz/len,0,-dx/len,0,0);v(b.x,ground,b.y,dz/len,0,-dx/len,columns,0);v(b.x,ground+wallHeight,b.y,dz/len,0,-dx/len,columns,floors);v(a.x,ground+wallHeight,a.y,dz/len,0,-dx/len,0,floors);g.idx.push(k,k+2,k+1,k,k+3,k+2);
+  if(len>4)walls.push([(a.x+b.x)/2,(a.y+b.y)/2,Math.atan2(dz/len,-dx/len),len,columns,floors]);
   if(len>longest.length)longest={length:len,x:(a.x+b.x)/2,z:(a.y+b.y)/2,angle:Math.atan2(dz/len,-dx/len)};
  }
  if(!pitched&&area>45&&height>6){
   let point=new Vector2(cx,cz);
   if(!pointInside(cx,cz,poly)){const tri=ShapeUtils.triangulateShape(poly,[])[0];if(tri)point=tri.reduce((s,i)=>s.addScaledVector(poly[i],1/3),new Vector2());}
   const radius=Math.min(...poly.map((a,i)=>edgeDistance(point,a,poly[(i+1)%poly.length])));
-  if(radius>1.6)architecture.push([point.x,ground+height,point.y,Math.min(radius,25),style,seed,longest.x,ground,longest.z,longest.angle,Math.min(longest.length,80),height].map(n=>+n.toFixed(2)));
+  if(radius>1.6)architecture.push([point.x,ground+height,point.y,Math.min(radius,25),style,seed,longest.x,ground,longest.z,longest.angle,Math.min(longest.length,80),height].map(n=>+n.toFixed(2)).concat([walls.map(w=>w.map(n=>+n.toFixed(3)))]));
  }
  count++;
 }
