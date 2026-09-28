@@ -50,7 +50,7 @@ async function init(){
   composer=new EffectComposer(renderer,new THREE.WebGLRenderTarget(innerWidth,innerHeight,{type:THREE.HalfFloatType,samples:4}));composer.addPass(new RenderPass(scene,camera));const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.10,.5,2.5);composer.addPass(bloom);composer.addPass(new OutputPass());
   if(innerWidth<700){setQuality('low');$('#quality').value='low';}
   progress(.08,'Reading streets, parks & mountain contours');
-  const [mapResponse,terrainResponse]=await Promise.all([fetch('/data/city.json'),fetch('/data/terrain.json')]);if(!mapResponse.ok||!terrainResponse.ok)throw Error('Map files could not be loaded.');const data=await mapResponse.json();terrain=await terrainResponse.json();
+  const [mapResponse,terrainResponse]=await Promise.all([fetch('/data/city.json',{cache:'no-cache'}),fetch('/data/terrain.json',{cache:'no-cache'})]);if(!mapResponse.ok||!terrainResponse.ok)throw Error('Map files could not be loaded.');const data=await mapResponse.json();terrain=await terrainResponse.json();
   makeTerrain(scene,terrain);progress(.16,'Following the rivers through the city');await new Promise(r=>setTimeout(r,20));
   const streets=makeStreets(scene,data,terrain);water=streets.waterMat;progress(.22,'Planting the parks and wooded hills');await new Promise(r=>setTimeout(r,20));
   addMemorial(scene,terrain);await Promise.all([addTaipei101(scene,terrain),addCityLandmarks(scene,terrain)]);progress(.3,'Building Taipei’s skyline');

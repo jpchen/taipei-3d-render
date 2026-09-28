@@ -74,7 +74,7 @@ function sample(route,distance,out){
 }
 
 export async function createCityLife(scene,dusk,{reducedMotion=false,terrain}={}){
-  const response=await fetch('/data/activity.json');if(!response.ok)throw Error('Street activity data could not be loaded');
+  const response=await fetch('/data/activity.json',{cache:'no-cache'});if(!response.ok)throw Error('Street activity data could not be loaded');
   const data=await response.json(),marketBounds=data.marketBounds,routes=data.routes.map(routeData).filter(r=>r.length>18),grid=new Map();
   makeFootways(scene,routes,terrain);
   for(const r of routes){const visited=new Set();for(let d=0;d<=r.length;d+=CELL*.6){const p=sample(r,Math.min(d,r.length-.001),{}),key=`${Math.floor(p.x/CELL)},${Math.floor(p.z/CELL)}`;if(!visited.has(key)){visited.add(key);if(!grid.has(key))grid.set(key,[]);grid.get(key).push(r);}}}

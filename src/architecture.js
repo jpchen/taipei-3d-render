@@ -68,7 +68,7 @@ function shopAtlas(){
 }
 
 export async function createArchitectureDetails(scene,dusk){
- const response=await fetch('/data/architecture.json');if(!response.ok)throw Error('Architectural details could not be loaded');const data=await response.json();
+ const response=await fetch('/data/architecture.json',{cache:'no-cache'});if(!response.ok)throw Error('Architectural details could not be loaded');const data=await response.json();
  const grid=new Map(),cell=500;for(const b of data.buildings){const key=`${Math.floor(b[0]/cell)},${Math.floor(b[2]/cell)}`;if(!grid.has(key))grid.set(key,[]);grid.get(key).push(b);}
  const silver=new THREE.MeshStandardMaterial({color:'#b6c3c0',metalness:.65,roughness:.4});
  const concrete=new THREE.MeshStandardMaterial({color:'#c8b798',roughness:.92});

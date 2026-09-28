@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
 export async function createMarket(scene,dusk){
- const response=await fetch('/data/market.json');if(!response.ok)throw Error('Market data unavailable');const data=await response.json();
+ const response=await fetch('/data/market.json',{cache:'no-cache'});if(!response.ok)throw Error('Market data unavailable');const data=await response.json();
  function merged(parts){const g=mergeGeometries(parts);parts.forEach(p=>p.dispose());return g;}
  const box=(w,h,d,x,y,z)=>new THREE.BoxGeometry(w,h,d).translate(x,y,z);
  const counter=merged([box(2.5,.85,1.35,0,.65,0),box(2.7,.12,1.6,0,1.12,0),...[-1,1].map(x=>box(.065,2.5,.065,x*1.25,1.4,-.55)),...[-1,0,1].map(x=>new THREE.CylinderGeometry(.21,.21,.12,8).translate(x*.6,1.24,.25)),box(.5,.5,.5,.8,1.38,-.38)]);

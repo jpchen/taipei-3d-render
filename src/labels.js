@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { terrainHeight } from './world.js';
 
 export async function createLabels(terrain,onSelect){
- const response=await fetch('/data/labels.json');if(!response.ok)throw Error('Place labels could not be loaded');const data=await response.json(),container=document.querySelector('#landmark-labels');
+ const response=await fetch('/data/labels.json',{cache:'no-cache'});if(!response.ok)throw Error('Place labels could not be loaded');const data=await response.json(),container=document.querySelector('#landmark-labels');
  const landmarks=data.landmarks.map(l=>({...l,position:new THREE.Vector3(l.x,terrainHeight(terrain,l.x,l.z)+l.height+8,l.z)}));
  const streets=data.streets.map(l=>({...l,position:new THREE.Vector3(l.x,terrainHeight(terrain,l.x,l.z)+1.8,l.z)}));
  const pool=[],streetPool=[];
