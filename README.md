@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Drag to orbit, right-drag to pan, and scroll to zoom. Touch supports orbit and two-finger pan/pinch. WASD pans, Q/E changes altitude, Shift accelerates, and R resets the view. Select a landmark or start the six-stop scenic tour. Sound is opt-in because browsers require a user gesture to start audio.
+Drag to orbit, middle-drag or right-drag to pan, and scroll to zoom. Touch supports orbit and two-finger pan/pinch. WASD pans, Q/E changes altitude, Shift accelerates, and R resets the view. Select a landmark or start the six-stop scenic tour. Sound is opt-in because browsers require a user gesture to start audio.
 
 ## Build and deploy
 
