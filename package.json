@@ -18,7 +18,8 @@
     "models": "blender -b --python scripts/build-landmarks.py",
     "test": "playwright test",
     "data:activity": "node scripts/prepare-activity.mjs",
-    "models:city": "blender -b --python scripts/build-city-landmarks.py"
+    "models:city": "blender -b --python scripts/build-city-landmarks.py",
+    "data:labels": "node scripts/prepare-labels.mjs"
   },
   "dependencies": {
     "three": "^0.183.2"

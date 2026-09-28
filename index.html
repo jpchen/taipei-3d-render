@@ -22,13 +22,14 @@
       </div>
     </header>
     <div id="loading" role="status"><div class="loading-symbol">台北</div><p>Finding the last light.</p><span id="loading-message">Preparing Taipei’s streets & skyline</span><div class="progress"><i id="progress-bar"></i></div></div>
-    <div id="landmark-labels" aria-hidden="true"></div>
+    <div id="landmark-labels"></div>
     <aside id="settings" class="panel" hidden>
       <div class="panel-heading">Make yourself at home<button class="close" data-close="settings" aria-label="Close settings">×</button></div>
       <label for="time">Light <span id="time-label">Golden hour</span></label><input id="time" type="range" min="0" max="100" value="38" /><div class="range-labels"><span>Late afternoon</span><span>Blue hour</span></div>
       <label for="volume">Soundscape <span id="volume-label">55%</span></label><input id="volume" type="range" min="0" max="100" value="55" />
       <label for="quality">Render detail</label><select id="quality"><option value="balanced">Balanced</option><option value="high">High</option><option value="low">Battery saver</option></select>
       <label class="switch-row">Street activity <input id="life-toggle" type="checkbox" checked /></label>
+      <label class="switch-row">Street names <input id="street-labels-toggle" type="checkbox" checked /></label>
       <label class="switch-row">Place labels <input id="labels-toggle" type="checkbox" checked /></label>
       <p class="panel-note">Real streets & building footprints. Estimated heights where map data is missing. Atmospheric lighting and facades are interpretive.</p>
     </aside>
@@ -53,7 +54,7 @@
       <button class="place" data-place="4"><span class="place-number">05</span><span>Tamsui River<small>淡水河</small></span><span class="place-arrow">↗</span></button>
       <button class="place" data-place="5"><span class="place-number">06</span><span>Songshan<small>松山</small></span><span class="place-arrow">↗</span></button>
     </nav>
-    <footer><span class="navigation-hint">DRAG TO ORBIT <i>·</i> MIDDLE-DRAG TO PAN <i>·</i> SCROLL TO ZOOM</span><button id="credits-toggle">Three.js + Blender <i>·</i> Map & terrain credits</button><span class="footer-end">STAY A LITTLE LONGER ↗</span></footer>
+    <footer><span class="navigation-hint">DRAG TO ORBIT <i>·</i> MIDDLE-DRAG TO PAN <i>·</i> SCROLL TO ZOOM</span><button id="credits-toggle">© OpenStreetMap <i>·</i> Map & terrain credits</button><span class="footer-end">STAY A LITTLE LONGER ↗</span></footer>
     <div id="toast" role="status"></div>
     <dialog id="credits"><button class="close" id="credits-close" aria-label="Close credits">×</button><div class="eyebrow">BUILT FROM A REAL PLACE</div><h2>Taipei, interpreted.</h2><p>Street paths, building footprints, parks and waterways come from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>, available under the Open Database License. <a href="/data/city.json" download>Download the derived map data</a>.</p><p>Terrain is sampled from <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noreferrer">Mapzen Terrain Tiles on AWS</a>, using global elevation data. SRTM and GMTED2010 data courtesy of the U.S. Geological Survey; ETOPO1 data from NOAA. <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noreferrer">Terrain source attribution</a>.</p><p>Taipei 101 is modeled in Blender at its 508 m height. Other buildings use mapped heights where available, with estimates elsewhere. Facades, vegetation, architectural details and the synthesized soundscape are artistic approximations. This is an atmospheric city model, not a photographic or survey reconstruction.</p><p id="data-stats"></p></dialog>
   </main>
