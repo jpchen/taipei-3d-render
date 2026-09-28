@@ -26,11 +26,12 @@ const locations=[
  {name:'Liberty Square',description:'Blue-tiled roofs and a city’s shared history.',lon:121.5205,lat:25.0352,target:35,offset:[650,450,770]},
  {name:'Tamsui River',description:'Following the river toward the evening sun.',lon:121.5060,lat:25.0602,target:10,offset:[750,600,1000]},
  {name:'Songshan',description:'A quieter bend in the city, beside the Keelung River.',lon:121.5722,lat:25.0500,target:65,offset:[1000,620,800]},
- {name:'Shilin Night Market',description:'Food stalls and evening crowds along Dadong and Danan roads.',lon:121.52530,lat:25.08770,target:4,offset:[0,18,0],look:[121.52532,25.08870],market:true}
+ {name:'Shilin Night Market',description:'Food stalls and evening crowds along Dadong and Danan roads.',lon:121.52530,lat:25.08770,target:4,offset:[0,18,0],look:[121.52532,25.08870],market:true},
+ {name:'Grand Hotel',description:'Red columns and golden roofs above the Keelung River.',lon:121.52630,lat:25.07860,target:45,offset:[-135,110,260],groundRelative:true}
 ];
 const toast=message=>{const el=$('#toast');el.textContent=message;el.classList.add('show');clearTimeout(el.timer);el.timer=setTimeout(()=>el.classList.remove('show'),3000);};
 function progress(value,message){$('#progress-bar').style.width=`${Math.round(value*100)}%`;if(message)$('#loading-message').textContent=message;}
-function destination(index){const place=locations[index];if(place.market&&market)return market.destination();const origin=project(place.lon,place.lat),target=place.look?project(...place.look):origin.clone();target.y=place.target;const pos=origin.clone().add(new THREE.Vector3(...place.offset));pos.y=Math.max(pos.y,terrainHeight(terrain,pos.x,pos.z)+80);return{pos,target};}
+function destination(index){const place=locations[index];if(place.market&&market)return market.destination();const origin=project(place.lon,place.lat),target=place.look?project(...place.look):origin.clone();target.y=place.target;const pos=origin.clone().add(new THREE.Vector3(...place.offset));if(place.groundRelative){const h=terrainHeight(terrain,origin.x,origin.z);pos.y+=h;target.y+=h;}pos.y=Math.max(pos.y,terrainHeight(terrain,pos.x,pos.z)+80);return{pos,target};}
 function selectPlace(index,instant=false){if(!ready)return;activePlace=index;const p=locations[index],d=destination(index);$('#place-title').textContent=p.name;$('#place-description').textContent=p.description;$('#view-index').textContent=`0${index+1} / ${String(locations.length).padStart(2,'0')}`;
  document.querySelectorAll('[data-place]').forEach((b,i)=>{b.classList.toggle('active',i===index);b.setAttribute('aria-current',i===index?'location':'false');});
  document.querySelector(`[data-place="${index}"]`)?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});

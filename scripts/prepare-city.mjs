@@ -39,7 +39,7 @@ for(const {t,p,id} of raw.elements){
   else if(t.waterway==='river')water.push({p:points,river:true,name:t.name});
   else if(t.natural==='water')water.push({p:points});continue;
  }
- if(t.location==='underground'||(Number(t.layer)<0&&!t.height)||[23641610,189788192,442195153].includes(id))continue;
+ if(t.location==='underground'||(Number(t.layer)<0&&!t.height)||[23641610,189788192,442195153,25202548].includes(id))continue;
  const center=p.reduce((s,a)=>[s[0]+a[0]/p.length,s[1]+a[1]/p.length],[0,0]),[cx,cz]=project(center);
  if(Math.hypot(cx-(121.5645-121.54)*100800,cz-(25.05-25.0339)*111320)<85)continue;
  let poly=p.slice(0,-1).map(c=>new Vector2(...project(c)));if(poly.length<3)continue;if(ShapeUtils.isClockWise(poly))poly.reverse();

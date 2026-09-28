@@ -90,3 +90,9 @@ Pavement is split along the actual terrain mesh triangles, eliminating buried se
 ## River reflections
 
 The river surface uses mipmapped procedural ripple normals advected over geographic coordinates. A shared 512×512 planar reflection captures the sky, terrain, buildings and landmarks at up to 8 Hz (12 Hz in high quality); small instanced details are omitted from the reflection pass. Battery saver uses an animated sky-color reflection without a second scene render. Reduced motion freezes the ripple animation. Waterway widths remain approximate where the map snapshot contains river centerlines rather than bank polygons.
+
+## Grand Hotel and destination navigation
+
+The eighth destination visits a dedicated Grand Hotel Blender model (`assets/grand-hotel.blend`; regenerate with `npm run models:hotel`). It replaces the generic OSM hotel extrusion at the mapped position and orientation, with 14 floors, vermilion columns, railings, decorative brackets, twin swept golden roofs and a double-eaved entrance. The exterior is an artistic interpretation based on the [hotel's official description](https://www.grand-hotel.org/EN/official/main.aspx) and [exterior reference photograph](https://www.sinko.co.jp/global_products/deliveryex/img/country/img_taiwan01.jpg). It is combined into six material batches.
+
+The destination strip supports left- or middle-mouse dragging, native touch swipes, and keyboard activation. Drag gestures suppress accidental destination clicks; normal clicks still work. Selecting or touring a destination scrolls its button into view.
