@@ -70,3 +70,9 @@ Taipei Dome, Taipei Main Station and Sun Yat-sen Memorial Hall now have separate
 ## Place and street labels
 
 `npm run data:labels` retains 350 landmark/park labels and 8,519 street anchors from the OSM extract. English and Chinese names appear by zoom level, with a capped DOM pool and overlap suppression. Landmark buttons fly to the selected place; street names have a separate visibility toggle. Terrain occlusion suppresses labels behind hills. Building occlusion is approximate because labels are an overlay rather than an indoor/navigation map.
+
+## Golden-hour lighting
+
+The warm low sun is balanced by cool sky fill and amber reflected light. Sky, haze, ambient light, reflections and window illumination transition together from afternoon through blue hour. Reflections capture the actual sky with a 70 km far plane (the sky sphere is 45 km across in radius); foliage receives its instance color once. Window emission stays restrained during daylight, and the dark interface overlay fades while exploring.
+
+`npm run test:data` checks geometry hashes/layouts, palette diversity, bilingual label data and lighting transitions without requiring a browser. Browser tests remain `npm test`.

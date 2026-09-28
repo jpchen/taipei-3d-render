@@ -1,13 +1,12 @@
 import './style.css';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Sky } from 'three/addons/objects/Sky.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { TaipeiAudio } from './audio.js';
-import { createAtmosphere } from './atmosphere.js';
+import { createLighting } from './lighting.js';
 import { createCityLife } from './activity.js';
 import { createLabels } from './labels.js';
 import { buildingMaterial, createArchitectureDetails } from './architecture.js';
@@ -15,8 +14,8 @@ import { project,terrainHeight,makeTerrain,loadBuildings,makeStreets,makeTrees,a
 
 const $=s=>document.querySelector(s), reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const audio=new TaipeiAudio(),dusk={value:.45};
-let renderer,terrain,controls,scene,camera,composer,sky,atmosphere,sunLight,hemi,water,cityLife=null,architecture=null,labelLayer=null,ready=false,activePlace=0,flight=null,touring=false,tourElapsed=0,interactionTimer,frame=0;
-const keys=new Set(),sun=new THREE.Vector3();
+let renderer,terrain,controls,scene,camera,composer,lighting,water,cityLife=null,architecture=null,labelLayer=null,ready=false,activePlace=0,flight=null,touring=false,tourElapsed=0,interactionTimer,frame=0;
+const keys=new Set();
 let previousTime=performance.now(),elapsedTime=0;
 const locations=[
  {name:'Taipei 101',description:'Above Xinyi, where the city meets the sky.',lon:121.5645,lat:25.0339,target:175,offset:[1500,710,1320]},
@@ -36,10 +35,7 @@ function selectPlace(index,instant=false){if(!ready)return;activePlace=index;con
 }
 function setTour(on){touring=on;tourElapsed=0;controls.autoRotate=on&&!reducedMotion;$('#tour-label').textContent=on?'Pause the scenic route':'Take the scenic route';$('#tour-icon').textContent=on?'Ⅱ':'↗';$('#tour').setAttribute('aria-pressed',String(on));if(on){document.body.classList.remove('exploring');toast('A slow drift through Taipei · drag to take over');}}
 function interacted(){if(!ready)return;flight=null;if(touring)setTour(false);document.body.classList.add('exploring');clearTimeout(interactionTimer);interactionTimer=setTimeout(()=>document.body.classList.remove('exploring'),16000);}
-function setLight(value){if(!sky)return;renderer.shadowMap.needsUpdate=true;const t=value/100,elevation=THREE.MathUtils.lerp(11,-3,t),phi=THREE.MathUtils.degToRad(90-elevation),theta=THREE.MathUtils.degToRad(260);sun.setFromSphericalCoords(1,phi,theta);sky.material.uniforms.sunPosition.value.copy(sun);sky.material.uniforms.turbidity.value=7;sky.material.uniforms.rayleigh.value=2.4;
- sunLight.position.copy(sun).multiplyScalar(7000).add(sunLight.target.position);sunLight.intensity=THREE.MathUtils.lerp(3.4,.06,t);sunLight.color.setHSL(.09-t*.025,.42+t*.2,.8-t*.1);hemi.intensity=THREE.MathUtils.lerp(2.1,.7,t);hemi.color.setHSL(.57,.22,.8-t*.24);scene.fog.color.setHSL(.11-t*.55,.19,.65-t*.35);scene.fog.density=.000036+t*.000015;renderer.toneMappingExposure=THREE.MathUtils.lerp(.78,.66,t);dusk.value=.12+t*1.9;
- if(atmosphere){atmosphere.material.uniforms.sunDirection.value.copy(sun);atmosphere.material.uniforms.evening.value=t;}
- const name=t<.22?'Late afternoon':t<.66?'Golden hour':t<.87?'Afterglow':'Blue hour';$('#time-label').textContent=name;$('#light-state').textContent=name.toUpperCase();}
+function setLight(value){if(!lighting)return;const name=lighting.setTime(value);$('#time-label').textContent=name;$('#light-state').textContent=name.toUpperCase();}
 function resize(){if(!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);}
 function setQuality(q){renderer.setPixelRatio(Math.min(devicePixelRatio,q==='high'?2:q==='low'?1:1.5));renderer.shadowMap.enabled=q!=='low';renderer.shadowMap.needsUpdate=true;composer.setPixelRatio(renderer.getPixelRatio());composer.passes[1].enabled=q!=='low';resize();}
 async function init(){
@@ -48,9 +44,7 @@ async function init(){
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();toast('Graphics paused. Reload the page to restore the scene.');});
   scene=new THREE.Scene();scene.fog=new THREE.FogExp2('#a7a294',.00005);camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,3,70000);camera.position.set(4200,850,3500);
   controls=new OrbitControls(camera,renderer.domElement);controls.mouseButtons={LEFT:THREE.MOUSE.ROTATE,MIDDLE:THREE.MOUSE.PAN,RIGHT:THREE.MOUSE.PAN};renderer.domElement.addEventListener("mousedown",e=>{if(e.button===1)e.preventDefault();});renderer.domElement.addEventListener("auxclick",e=>{if(e.button===1)e.preventDefault();});controls.enableDamping=true;controls.dampingFactor=.065;controls.minDistance=30;controls.maxDistance=16000;controls.maxPolarAngle=Math.PI*.492;controls.screenSpacePanning=false;controls.autoRotateSpeed=.28;controls.zoomSpeed=.7;controls.panSpeed=.65;controls.addEventListener('start',interacted);
-  hemi=new THREE.HemisphereLight('#bcd6df','#676a48',1.6);scene.add(hemi);sunLight=new THREE.DirectionalLight('#ffce8b',2.5);sunLight.castShadow=true;sunLight.shadow.mapSize.set(2048,2048);Object.assign(sunLight.shadow.camera,{left:-2300,right:2300,top:2300,bottom:-2300,near:10,far:14000});sunLight.shadow.bias=-.0002;sunLight.shadow.normalBias=2;sunLight.target.position.set(2200,0,1800);scene.add(sunLight,sunLight.target);
-  sky=new Sky();sky.scale.setScalar(50000);sky.material.fragmentShader=sky.material.fragmentShader.replace('gl_FragColor = vec4( texColor, 1.0 );','gl_FragColor = vec4( texColor * 0.28, 1.0 );');sky.material.uniforms.mieCoefficient.value=.003;sky.material.uniforms.mieDirectionalG.value=.88;scene.add(sky);setLight(38);
-  const pmrem=new THREE.PMREMGenerator(renderer);const environment=pmrem.fromScene(sky,.04);scene.environment=environment.texture;scene.environmentIntensity=.35;pmrem.dispose();scene.remove(sky);atmosphere=createAtmosphere();scene.add(atmosphere);setLight(38);
+  lighting=createLighting(scene,renderer,dusk);setLight(38);lighting.refreshEnvironment();
   composer=new EffectComposer(renderer,new THREE.WebGLRenderTarget(innerWidth,innerHeight,{type:THREE.HalfFloatType,samples:4}));composer.addPass(new RenderPass(scene,camera));const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.10,.5,2.5);composer.addPass(bloom);composer.addPass(new OutputPass());
   if(innerWidth<700){setQuality('low');$('#quality').value='low';}
   progress(.08,'Reading streets, parks & mountain contours');
@@ -60,7 +54,7 @@ async function init(){
   makeTrees(scene,data.parks,terrain);addMemorial(scene,terrain);await Promise.all([addTaipei101(scene,terrain),addCityLandmarks(scene,terrain)]);progress(.3,'Building Taipei’s skyline');
   await loadBuildings(scene,data.buildings,buildingMaterial(dusk),v=>progress(.3+v*.65,`Building Taipei’s skyline · ${Math.round(v*100)}%`));
   cityLife=await createCityLife(scene,dusk,{reducedMotion,terrain});architecture=await createArchitectureDetails(scene,dusk);labelLayer=await createLabels(terrain,l=>{interacted();const target=new THREE.Vector3(l.x,terrainHeight(terrain,l.x,l.z)+l.height*.45,l.z),pos=target.clone().add(new THREE.Vector3(420,Math.max(220,l.height),470));flight={start:performance.now(),duration:2800,from:camera.position.clone(),fromTarget:controls.target.clone(),pos,target};$('#place-title').textContent=l.name;$('#place-description').textContent=l.zh||'Explore the neighborhood.';$('#view-index').textContent='EXPLORE';document.querySelectorAll('[data-place]').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-current','false');});});$('#data-stats').textContent=`${data.count.toLocaleString()} buildings · ${data.known.toLocaleString()} mapped heights · ${data.roads.length.toLocaleString()} street segments. Map snapshot: ${data.date.slice(0,10)}.`;
-  renderer.shadowMap.needsUpdate=true;ready=true;selectPlace(0,true);progress(1,'Welcome to Taipei.');animate();await new Promise(r=>setTimeout(r,350));$('#loading').classList.add('done');setTimeout(()=>$('#loading').remove(),1200);window.__taipei={get ready(){return ready},renderer,scene,camera,controls,get place(){return activePlace},get touring(){return touring},audio,activity:cityLife,architecture,labels:labelLayer,stats:{buildings:data.count,known:data.known}};
+  renderer.shadowMap.needsUpdate=true;ready=true;selectPlace(0,true);progress(1,'Welcome to Taipei.');animate();await new Promise(r=>setTimeout(r,350));$('#loading').classList.add('done');setTimeout(()=>$('#loading').remove(),1200);window.__taipei={get ready(){return ready},renderer,scene,camera,controls,get place(){return activePlace},get touring(){return touring},audio,activity:cityLife,architecture,labels:labelLayer,lighting,stats:{buildings:data.count,known:data.known}};
  }catch(e){console.error(e);$('#loading-message').textContent=`${e.message} Please reload to try again.`;$('#loading p').textContent='The city couldn’t load.';const retry=document.createElement('button');retry.className='primary';retry.textContent='Try again';retry.style.marginTop='24px';retry.onclick=()=>location.reload();$('#loading').appendChild(retry);}
 }
 function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min((now-previousTime)/1000,.05);previousTime=now;elapsedTime+=dt;const time=elapsedTime;frame++;
@@ -70,7 +64,7 @@ function animate(){requestAnimationFrame(animate);const now=performance.now(),dt
  if(touring){tourElapsed+=dt;if(tourElapsed>19){tourElapsed=0;selectPlace((activePlace+1)%locations.length);}}
  if(water?.userData.shader)water.userData.shader.uniforms.uTime.value=time;cityLife?.update(time,camera,controls.target,$('#quality').value);architecture?.update(time,camera,$('#quality').value);
  if(frame%8===0){labelLayer?.update(camera,innerWidth,innerHeight,time);audio.update(camera.position.y);$('#altitude').textContent=`${Math.round(camera.position.y).toLocaleString()} M`;const dir=new THREE.Vector3();camera.getWorldDirection(dir);let degrees=(THREE.MathUtils.radToDeg(Math.atan2(dir.x,-dir.z))+360)%360;$('#heading').textContent=['N','NE','E','SE','S','SW','W','NW'][Math.round(degrees/45)%8];}
- composer.render();
+ lighting.update(camera);composer.render();
 }
 $('#audio-toggle').addEventListener('click',async()=>{try{const enabled=await audio.toggle();$('#audio-toggle').setAttribute('aria-pressed',String(enabled));$('#audio-toggle').setAttribute('aria-label',enabled?'Mute ambient sound':'Enable ambient sound');$('#audio-label').textContent=enabled?'Sound on':'Sound off';toast(enabled?'Wind, distant traffic & birds · an original soundscape':'Soundscape paused');}catch(e){toast('Audio is unavailable in this browser.');console.error(e);}});
 $('#life-toggle').addEventListener('change',e=>cityLife?.setEnabled(e.target.checked));

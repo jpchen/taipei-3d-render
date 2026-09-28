@@ -19,7 +19,8 @@
     "test": "playwright test",
     "data:activity": "node scripts/prepare-activity.mjs",
     "models:city": "blender -b --python scripts/build-city-landmarks.py",
-    "data:labels": "node scripts/prepare-labels.mjs"
+    "data:labels": "node scripts/prepare-labels.mjs",
+    "test:data": "node --test tests/data.test.mjs tests/lighting.test.mjs"
   },
   "dependencies": {
     "three": "^0.183.2"
