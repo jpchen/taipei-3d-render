@@ -8,13 +8,14 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { TaipeiAudio } from './audio.js';
 import { createLighting } from './lighting.js';
 import { createCityLife } from './activity.js';
+import {createMarket} from './market.js';
 import { createLabels } from './labels.js';
 import { buildingMaterial, createArchitectureDetails } from './architecture.js';
 import { project,terrainHeight,makeTerrain,loadBuildings,makeStreets,makeTrees,addTaipei101,addMemorial,addCityLandmarks } from './world.js';
 
 const $=s=>document.querySelector(s), reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const audio=new TaipeiAudio(),dusk={value:.45};
-let renderer,terrain,controls,scene,camera,composer,lighting,water,cityLife=null,architecture=null,labelLayer=null,ready=false,activePlace=0,flight=null,touring=false,tourElapsed=0,interactionTimer,frame=0;
+let renderer,terrain,controls,scene,camera,composer,lighting,water,cityLife=null,architecture=null,labelLayer=null,market=null,ready=false,activePlace=0,flight=null,touring=false,tourElapsed=0,interactionTimer,frame=0;
 const keys=new Set();
 let previousTime=performance.now(),elapsedTime=0;
 const locations=[
@@ -23,12 +24,13 @@ const locations=[
  {name:'Daan Forest Park',description:'A green breathing space in the heart of Taipei.',lon:121.5357,lat:25.0295,target:20,offset:[850,620,1000]},
  {name:'Liberty Square',description:'Blue-tiled roofs and a city’s shared history.',lon:121.5205,lat:25.0352,target:35,offset:[650,450,770]},
  {name:'Tamsui River',description:'Following the river toward the evening sun.',lon:121.5060,lat:25.0602,target:10,offset:[750,600,1000]},
- {name:'Songshan',description:'A quieter bend in the city, beside the Keelung River.',lon:121.5722,lat:25.0500,target:65,offset:[1000,620,800]}
+ {name:'Songshan',description:'A quieter bend in the city, beside the Keelung River.',lon:121.5722,lat:25.0500,target:65,offset:[1000,620,800]},
+ {name:'Shilin Night Market',description:'Food stalls and evening crowds along Dadong and Danan roads.',lon:121.52530,lat:25.08770,target:4,offset:[0,18,0],look:[121.52532,25.08870],market:true}
 ];
 const toast=message=>{const el=$('#toast');el.textContent=message;el.classList.add('show');clearTimeout(el.timer);el.timer=setTimeout(()=>el.classList.remove('show'),3000);};
 function progress(value,message){$('#progress-bar').style.width=`${Math.round(value*100)}%`;if(message)$('#loading-message').textContent=message;}
-function destination(index){const place=locations[index],origin=project(place.lon,place.lat),target=place.look?project(...place.look):origin.clone();target.y=place.target;const pos=origin.clone().add(new THREE.Vector3(...place.offset));pos.y=Math.max(pos.y,terrainHeight(terrain,pos.x,pos.z)+80);return{pos,target};}
-function selectPlace(index,instant=false){if(!ready)return;activePlace=index;const p=locations[index],d=destination(index);$('#place-title').textContent=p.name;$('#place-description').textContent=p.description;$('#view-index').textContent=`0${index+1} / 06`;
+function destination(index){const place=locations[index];if(place.market&&market)return market.destination();const origin=project(place.lon,place.lat),target=place.look?project(...place.look):origin.clone();target.y=place.target;const pos=origin.clone().add(new THREE.Vector3(...place.offset));pos.y=Math.max(pos.y,terrainHeight(terrain,pos.x,pos.z)+80);return{pos,target};}
+function selectPlace(index,instant=false){if(!ready)return;activePlace=index;const p=locations[index],d=destination(index);$('#place-title').textContent=p.name;$('#place-description').textContent=p.description;$('#view-index').textContent=`0${index+1} / ${String(locations.length).padStart(2,'0')}`;
  document.querySelectorAll('[data-place]').forEach((b,i)=>{b.classList.toggle('active',i===index);b.setAttribute('aria-current',i===index?'location':'false');});
  if(instant||reducedMotion){camera.position.copy(d.pos);controls.target.copy(d.target);controls.update();flight=null;}
  else{flight={start:performance.now(),duration:3600,from:camera.position.clone(),fromTarget:controls.target.clone(),...d};}
@@ -51,10 +53,10 @@ async function init(){
   const [mapResponse,terrainResponse]=await Promise.all([fetch('/data/city.json'),fetch('/data/terrain.json')]);if(!mapResponse.ok||!terrainResponse.ok)throw Error('Map files could not be loaded.');const data=await mapResponse.json();terrain=await terrainResponse.json();
   makeTerrain(scene,terrain);progress(.16,'Following the rivers through the city');await new Promise(r=>setTimeout(r,20));
   const streets=makeStreets(scene,data,terrain);water=streets.waterMat;progress(.22,'Planting the parks and wooded hills');await new Promise(r=>setTimeout(r,20));
-  makeTrees(scene,data.parks,terrain);addMemorial(scene,terrain);await Promise.all([addTaipei101(scene,terrain),addCityLandmarks(scene,terrain)]);progress(.3,'Building Taipei’s skyline');
+  addMemorial(scene,terrain);await Promise.all([addTaipei101(scene,terrain),addCityLandmarks(scene,terrain)]);progress(.3,'Building Taipei’s skyline');
   await loadBuildings(scene,data.buildings,buildingMaterial(dusk),v=>progress(.3+v*.65,`Building Taipei’s skyline · ${Math.round(v*100)}%`));
-  cityLife=await createCityLife(scene,dusk,{reducedMotion,terrain});architecture=await createArchitectureDetails(scene,dusk);labelLayer=await createLabels(terrain,l=>{interacted();const target=new THREE.Vector3(l.x,terrainHeight(terrain,l.x,l.z)+l.height*.45,l.z),pos=target.clone().add(new THREE.Vector3(420,Math.max(220,l.height),470));flight={start:performance.now(),duration:2800,from:camera.position.clone(),fromTarget:controls.target.clone(),pos,target};$('#place-title').textContent=l.name;$('#place-description').textContent=l.zh||'Explore the neighborhood.';$('#view-index').textContent='EXPLORE';document.querySelectorAll('[data-place]').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-current','false');});});$('#data-stats').textContent=`${data.count.toLocaleString()} buildings · ${data.known.toLocaleString()} mapped heights · ${data.roads.length.toLocaleString()} street segments. Map snapshot: ${data.date.slice(0,10)}.`;
-  renderer.shadowMap.needsUpdate=true;ready=true;selectPlace(0,true);progress(1,'Welcome to Taipei.');animate();await new Promise(r=>setTimeout(r,350));$('#loading').classList.add('done');setTimeout(()=>$('#loading').remove(),1200);window.__taipei={get ready(){return ready},renderer,scene,camera,controls,get place(){return activePlace},get touring(){return touring},audio,activity:cityLife,architecture,labels:labelLayer,lighting,stats:{buildings:data.count,known:data.known}};
+  cityLife=await createCityLife(scene,dusk,{reducedMotion,terrain});makeTrees(scene,data.parks,terrain,cityLife.walkways);architecture=await createArchitectureDetails(scene,dusk);market=await createMarket(scene,dusk);labelLayer=await createLabels(terrain,l=>{interacted();const target=new THREE.Vector3(l.x,terrainHeight(terrain,l.x,l.z)+l.height*.45,l.z),pos=target.clone().add(new THREE.Vector3(420,Math.max(220,l.height),470));flight={start:performance.now(),duration:2800,from:camera.position.clone(),fromTarget:controls.target.clone(),pos,target};$('#place-title').textContent=l.name;$('#place-description').textContent=l.zh||'Explore the neighborhood.';$('#view-index').textContent='EXPLORE';document.querySelectorAll('[data-place]').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-current','false');});});$('#data-stats').textContent=`${data.count.toLocaleString()} buildings · ${data.known.toLocaleString()} mapped heights · ${data.roads.length.toLocaleString()} street segments. Map snapshot: ${data.date.slice(0,10)}.`;
+  renderer.shadowMap.needsUpdate=true;ready=true;selectPlace(0,true);progress(1,'Welcome to Taipei.');animate();await new Promise(r=>setTimeout(r,350));$('#loading').classList.add('done');setTimeout(()=>$('#loading').remove(),1200);window.__taipei={get ready(){return ready},renderer,scene,camera,controls,get place(){return activePlace},get touring(){return touring},audio,activity:cityLife,architecture,market,labels:labelLayer,lighting,stats:{buildings:data.count,known:data.known}};
  }catch(e){console.error(e);$('#loading-message').textContent=`${e.message} Please reload to try again.`;$('#loading p').textContent='The city couldn’t load.';const retry=document.createElement('button');retry.className='primary';retry.textContent='Try again';retry.style.marginTop='24px';retry.onclick=()=>location.reload();$('#loading').appendChild(retry);}
 }
 function animate(){requestAnimationFrame(animate);const now=performance.now(),dt=Math.min((now-previousTime)/1000,.05);previousTime=now;elapsedTime+=dt;const time=elapsedTime;frame++;
@@ -62,7 +64,7 @@ function animate(){requestAnimationFrame(animate);const now=performance.now(),dt
  if(keys.size&&!flight){const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();const right=new THREE.Vector3().crossVectors(forward,camera.up),delta=new THREE.Vector3();let speed=dt*(keys.has('shift')?650:190);if(keys.has('w')||keys.has('arrowup'))delta.add(forward);if(keys.has('s')||keys.has('arrowdown'))delta.sub(forward);if(keys.has('d')||keys.has('arrowright'))delta.add(right);if(keys.has('a')||keys.has('arrowleft'))delta.sub(right);if(keys.has('e'))delta.y+=1;if(keys.has('q'))delta.y-=1;delta.multiplyScalar(speed);camera.position.add(delta);controls.target.add(delta);}
  camera.position.x=THREE.MathUtils.clamp(camera.position.x,-10500,14000);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-16000,11500);camera.position.y=THREE.MathUtils.clamp(camera.position.y,terrainHeight(terrain,camera.position.x,camera.position.z)+14,13000);controls.target.y=Math.max(0,controls.target.y);controls.update();
  if(touring){tourElapsed+=dt;if(tourElapsed>19){tourElapsed=0;selectPlace((activePlace+1)%locations.length);}}
- if(water?.userData.shader)water.userData.shader.uniforms.uTime.value=time;cityLife?.update(time,camera,controls.target,$('#quality').value);architecture?.update(time,camera,$('#quality').value);
+ if(water?.userData.shader)water.userData.shader.uniforms.uTime.value=time;cityLife?.update(time,camera,controls.target,$('#quality').value);architecture?.update(time,camera,$('#quality').value);market?.update(time,camera,$('#quality').value);
  if(frame%8===0){labelLayer?.update(camera,innerWidth,innerHeight,time);audio.update(camera.position.y);$('#altitude').textContent=`${Math.round(camera.position.y).toLocaleString()} M`;const dir=new THREE.Vector3();camera.getWorldDirection(dir);let degrees=(THREE.MathUtils.radToDeg(Math.atan2(dir.x,-dir.z))+360)%360;$('#heading').textContent=['N','NE','E','SE','S','SW','W','NW'][Math.round(degrees/45)%8];}
  lighting.update(camera);composer.render();
 }

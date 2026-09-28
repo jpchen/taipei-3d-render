@@ -75,14 +75,14 @@ function sample(route,distance,out){
 
 export async function createCityLife(scene,dusk,{reducedMotion=false,terrain}={}){
   const response=await fetch('/data/activity.json');if(!response.ok)throw Error('Street activity data could not be loaded');
-  const data=await response.json(),routes=data.routes.map(routeData).filter(r=>r.length>18),grid=new Map();
+  const data=await response.json(),marketBounds=data.marketBounds,routes=data.routes.map(routeData).filter(r=>r.length>18),grid=new Map();
   makeFootways(scene,routes,terrain);
   for(const r of routes){const visited=new Set();for(let d=0;d<=r.length;d+=CELL*.6){const p=sample(r,Math.min(d,r.length-.001),{}),key=`${Math.floor(p.x/CELL)},${Math.floor(p.z/CELL)}`;if(!visited.has(key)){visited.add(key);if(!grid.has(key))grid.set(key,[]);grid.get(key).push(r);}}}
-  const clock={value:0},mat=material(clock,dusk),kinds=['car','bus','scooter','person'],caps={car:750,bus:70,scooter:320,person:700},meshes={};
+  const clock={value:0},mat=material(clock,dusk),kinds=['car','bus','scooter','person'],caps={car:750,bus:70,scooter:320,person:1400},meshes={};
   for(const kind of kinds){const mesh=new THREE.InstancedMesh(prototype(kind),mat,caps[kind]);mesh.name=`City life: ${kind}`;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);mesh.frustumCulled=false;mesh.count=0;mesh.setColorAt(0,new THREE.Color());scene.add(mesh);meshes[kind]=mesh;}
   let active=[],lastRefresh=-10,lastTick=-10,lastFocus=new THREE.Vector3(Infinity,0,Infinity),enabled=true;
   const dummy=new THREE.Object3D(),point={},clip=new THREE.Vector3(),counts={car:0,bus:0,scooter:0,person:0},color=new THREE.Color();
-  const stats={visibleCars:0,visibleBuses:0,visibleScooters:0,visiblePeople:0,candidateRoutes:0,drawCalls:0,updateHz:0,enabled:true};
+  const stats={visibleCars:0,visibleBuses:0,visibleScooters:0,visiblePeople:0,visibleMarketPeople:0,visibleParkPeople:0,candidateRoutes:0,drawCalls:0,updateHz:0,enabled:true};
   function refresh(camera,target,time,low){
     const candidates=new Set(),radius=low?1600:2400;
     for(const focus of [camera.position,target]){const cx=Math.floor(focus.x/CELL),cz=Math.floor(focus.z/CELL),n=Math.ceil(radius/CELL);for(let i=cx-n;i<=cx+n;i++)for(let j=cz-n;j<=cz+n;j++)for(const r of grid.get(`${i},${j}`)||[])candidates.add(r);}
@@ -93,11 +93,11 @@ export async function createCityLife(scene,dusk,{reducedMotion=false,terrain}={}
     clock.value=reducedMotion?0:time;if(!enabled||document.hidden)return;
     const low=quality==='low',interval=1/(low?15:30);if(time-lastTick<interval)return;lastTick=time;stats.updateHz=low?15:30;
     if(time-lastRefresh>.8||lastFocus.distanceToSquared(camera.position)>180**2)refresh(camera,target,time,low);
-    kinds.forEach(k=>counts[k]=0);const movementTime=reducedMotion?0:time;
-    const vehicleDistance=low?1800:3000,personDistance=low?230:520;
+    kinds.forEach(k=>counts[k]=0);stats.visibleMarketPeople=0;stats.visibleParkPeople=0;const movementTime=reducedMotion?0:time;
+    const vehicleDistance=low?1800:3000,personDistance=low?300:700;
     for(const r of active){
       const walking=r.k==='walk',highway=r.k==='motorway'||r.k==='trunk';
-      const density=walking?17:highway?130:65,amount=Math.min(walking?30:24,Math.max(1,Math.floor(r.length/density)));
+      const density=walking?(r.market?2.0:r.park?8:15):highway?130:65,amount=Math.min(walking?(r.market?160:70):24,Math.max(1,Math.floor(r.length/density)));
       for(let i=0;i<amount;i++){
         const seed=hash(r.id+i*17.3),kind=walking?'person':seed<.065&&!highway?'bus':seed<.32&&!highway?'scooter':'car';
         const cap=Math.floor(caps[kind]*(low?.45:1));if(counts[kind]>=cap)continue;
@@ -107,13 +107,15 @@ export async function createCityLife(scene,dusk,{reducedMotion=false,terrain}={}
         sample(r,d,point);
         // Taiwan drives on the right. Each direction gets its own lane;
         // pedestrian routes remain on actual mapped footways.
-        const lane=walking?(seed-.5)*.9:r.oneway?(seed-.5)*Math.max(1,r.w-5):direction*Math.min(r.w*.22,4.5);
+        const lane=walking?(seed-.5)*(r.market?3.2:1.5):r.oneway?(seed-.5)*Math.max(1,r.w-5):direction*Math.min(r.w*.22,4.5);
         point.x+=point.dz*lane;point.z-=point.dx*lane;if(!r.bridge)point.y=terrainHeight(terrain,point.x,point.z)+.32;
+        if(r.marketStreet&&marketBounds&&point.x>marketBounds[0]&&point.x<marketBounds[2]&&point.z>marketBounds[1]&&point.z<marketBounds[3])continue;
         const distance=Math.hypot(point.x-camera.position.x,point.y-camera.position.y,point.z-camera.position.z);
         if(distance>(walking?personDistance:vehicleDistance))continue;
         clip.set(point.x,point.y+1,point.z).project(camera);if(clip.z<0||clip.z>1||Math.abs(clip.x)>1.08||Math.abs(clip.y)>1.1)continue;
         const edge=Math.min(travel,r.length-travel),scale=THREE.MathUtils.smoothstep(edge,0,walking?1.5:6);
         dummy.position.set(point.x,point.y,point.z);dummy.rotation.set(0,Math.atan2(point.dx*direction,point.dz*direction),0);const size=walking?.9+seed*.22:1;dummy.scale.setScalar(size*scale);dummy.updateMatrix();
+        if(r.market)stats.visibleMarketPeople++;if(r.park)stats.visibleParkPeople++;
         const index=counts[kind]++;meshes[kind].setMatrixAt(index,dummy.matrix);color.set(COLORS[Math.floor(hash(r.id+i*47)*COLORS.length)]);meshes[kind].setColorAt(index,color);
       }
     }
@@ -128,5 +130,5 @@ export async function createCityLife(scene,dusk,{reducedMotion=false,terrain}={}
     return{pos:new THREE.Vector3(best.x,best.y+18,best.z),target:new THREE.Vector3(look.x,look.y+3,look.z)};
   }
   function setEnabled(value){enabled=value;stats.enabled=value;for(const m of Object.values(meshes))m.visible=value&&m.count>0;lastTick=-10;}
-  return {update,streetView,setEnabled,stats,meshes};
+  return {update,streetView,setEnabled,stats,meshes,walkways:routes.filter(r=>r.k==='walk').map(r=>r.p)};
 }

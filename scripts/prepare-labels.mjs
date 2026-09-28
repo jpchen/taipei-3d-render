@@ -36,7 +36,7 @@ for(const e of elements){const {t,p,id}=e;if(!p?.length||t.location==='undergrou
  }
 }
 // Geographic places that are not individual building ways in the source extract.
-for(const [name,zh,lon,lat,height] of [['Elephant Mountain','象山',121.5763,25.0273,45],['Tamsui River','淡水河',121.506,25.0602,5],['Keelung River','基隆河',121.571,25.059,5],['Songshan Cultural Park','松山文創園區',121.5601,25.0442,18],['Daan Forest Park','大安森林公園',121.5357,25.0295,15],['Liberty Square','自由廣場',121.5199,25.0352,15]]){if(!seen.has(name)){const [x,z]=project([lon,lat]);landmarks.push({id:name,name,zh,x,z,height,rank:0});seen.add(name);}}
+for(const [name,zh,lon,lat,height] of [['Shilin Night Market','士林夜市',121.52525,25.08865,8],['Elephant Mountain','象山',121.5763,25.0273,45],['Tamsui River','淡水河',121.506,25.0602,5],['Keelung River','基隆河',121.571,25.059,5],['Songshan Cultural Park','松山文創園區',121.5601,25.0442,18],['Daan Forest Park','大安森林公園',121.5357,25.0295,15],['Liberty Square','自由廣場',121.5199,25.0352,15]]){if(!seen.has(name)){const [x,z]=project([lon,lat]);landmarks.push({id:name,name,zh,x,z,height,rank:0});seen.add(name);}}
 if(!seen.has('Taipei 101')){const [x,z]=project([121.5645,25.0339]);landmarks.push({id:'101',name:'Taipei 101',zh:'台北 101',x,z,height:508,rank:0});}
 landmarks.sort((a,b)=>a.rank-b.rank);
 await writeFile('public/data/labels.json',JSON.stringify({source:'© OpenStreetMap contributors, ODbL 1.0',date,landmarks:landmarks.slice(0,350),streets}));console.log('Labels:',Math.min(350,landmarks.length),'landmarks,',streets.length,'street anchors');

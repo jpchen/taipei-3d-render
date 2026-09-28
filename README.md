@@ -59,7 +59,7 @@ Browser tests check successful WebGL loading, viewpoint movement, orbit and keyb
 
 ## Street activity
 
-Middle-drag pans; the **Explore at street level** button moves to a nearby mapped road. Cars, buses, scooters and walking people share four instanced prototypes (at most four activity draw calls). Vehicles follow road direction and right-hand lanes; people follow mapped footways. Spatial indexing limits simulation to nearby routes. Pedestrians disappear beyond 520 m (230 m in battery saver), vehicles beyond 3 km (1.8 km in battery saver), and offscreen instances are culled. Instance updates are capped at 30 Hz / 15 Hz; walking motion runs in the vertex shader. Activity pauses in hidden tabs and respects reduced-motion preferences. Settings can disable it altogether. `npm run data:activity` regenerates route data; the additional OSM footway extract is in `assets/walkways-source.json`.
+Middle-drag pans; the **Explore at street level** button moves to a nearby mapped road. Cars, buses, scooters and walking people share four instanced prototypes (at most four activity draw calls). Vehicles follow road direction and right-hand lanes; people follow mapped footways. Spatial indexing limits simulation to nearby routes. Pedestrians disappear beyond 700 m (300 m in battery saver), vehicles beyond 3 km (1.8 km in battery saver), and offscreen instances are culled. Instance updates are capped at 30 Hz / 15 Hz; walking motion runs in the vertex shader. Activity pauses in hidden tabs and respects reduced-motion preferences. Settings can disable it altogether. `npm run data:activity` regenerates route data; the additional OSM footway extract is in `assets/walkways-source.json`.
 
 ## Architecture
 
@@ -78,3 +78,11 @@ The warm low sun is balanced by cool sky fill and amber reflected light. Sky, ha
 `npm run test:data` checks geometry hashes/layouts, palette diversity, bilingual label data and lighting transitions without requiring a browser. Browser tests remain `npm test`.
 
 Facade windows use an integer number of bays fitted across each wall and floor, avoiding cropped edge windows. Residential walls add open balcony railings, green awnings and wall-mounted AC condensers on nearby visible facades. Palette additions remain restrained; this [Taipei skyline and apartment reference](https://hiking.biji.co/index.php?act=info&q=review&review_id=26200) informed the pale ceramic tile, blue-green glass and green awning choices. The photograph is a visual reference and is not redistributed.
+
+## Shilin and park life
+
+The seventh destination opens along mapped Dadong Road at Shilin Night Market. Forty-five instanced stalls use one sign atlas, reusable counters, colored canopies and emissive lanterns: four draw calls, with no per-stall lights. They disappear beyond 1.2 km (600 m in battery saver). The vendor names and placements are illustrative, not a current business inventory. The [Taipei tourism board](https://travel.taipei/en/attraction/details/1692) identifies Dadong and Danan roads as part of the market district. `npm run data:market` regenerates the market layout from the stored OSM road geometry; run `npm run data:activity` afterward.
+
+People are denser on mapped park paths and market lanes, reusing the same animated person geometry. Pedestrians are capped at 1,400 instances (630 in battery saver), within the existing four activity draw calls. Market lanes exclude simulated vehicle traffic. Park tree placement leaves walking paths clear. This is lightweight procedural city life, not a crowd or traffic simulation.
+
+Pavement is split along the actual terrain mesh triangles, eliminating buried segments caused by mismatched interpolation. Rounded joins cover road endpoints without creating extra drawing batches.

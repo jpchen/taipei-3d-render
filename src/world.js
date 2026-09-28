@@ -43,10 +43,12 @@ export function makeStreets(scene,data,terrain){
  return {waterMat,traffic};
 }
 function inside(x,z,poly){let yes=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])yes=!yes;}return yes;}
-export function makeTrees(scene,parks,terrain){
+export function makeTrees(scene,parks,terrain,walkways=[]){
+ const pathGrid=new Map(),cell=20;for(const path of walkways)for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i],steps=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/5));for(let j=0;j<=steps;j++){const x=a[0]+(b[0]-a[0])*j/steps,z=a[1]+(b[1]-a[1])*j/steps,key=`${Math.floor(x/cell)},${Math.floor(z/cell)}`;if(!pathGrid.has(key))pathGrid.set(key,[]);pathGrid.get(key).push([x,z]);}}
+ function clearPath(x,z,height){const cx=Math.floor(x/cell),cz=Math.floor(z/cell);for(let i=cx-1;i<=cx+1;i++)for(let j=cz-1;j<=cz+1;j++)for(const p of pathGrid.get(`${i},${j}`)||[])if(Math.hypot(p[0]-x,p[1]-z)<height*.48+2)return false;return true;}
  let seed=817;const rand=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646;};let trees=[];
  for(const park of parks){const xs=park.map(p=>p[0]),zs=park.map(p=>p[1]),minX=Math.min(...xs),maxX=Math.max(...xs),minZ=Math.min(...zs),maxZ=Math.max(...zs),amount=Math.min(1400,Math.floor((maxX-minX)*(maxZ-minZ)/160));
- for(let i=0;i<amount;i++){let x=minX+rand()*(maxX-minX),z=minZ+rand()*(maxZ-minZ);if(inside(x,z,park))trees.push([x,terrainHeight(terrain,x,z),z,5+rand()*8]);}}
+ for(let i=0;i<amount;i++){let x=minX+rand()*(maxX-minX),z=minZ+rand()*(maxZ-minZ);const height=5+rand()*8;if(inside(x,z,park)&&clearPath(x,z,height))trees.push([x,terrainHeight(terrain,x,z),z,height]);}}
  // Wooded foothills follow the terrain, with no trees on mapped flat streets.
  for(let i=0;i<18000;i++){let x=-6500+rand()*18000,z=-11000+rand()*20000,h=terrainHeight(terrain,x,z);if(h>65&&h<850)trees.push([x,h,z,6+rand()*7]);}
  const geo=new THREE.IcosahedronGeometry(1,1),mat=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:1});const mesh=new THREE.InstancedMesh(geo,mat,trees.length);const o=new THREE.Object3D(),c=new THREE.Color();trees.forEach(([x,y,z,h],i)=>{o.position.set(x,y+h*.7,z);o.scale.set(h*.48,h*.65,h*.48);o.rotation.y=rand()*6.28;o.updateMatrix();mesh.setMatrixAt(i,o.matrix);c.setHSL(.23+rand()*.08,.17+rand()*.15,.15+rand()*.07);mesh.setColorAt(i,c);});mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);return mesh;
@@ -67,7 +69,7 @@ export function addMemorial(scene,terrain){
 }
 
 export function makeFootways(scene,routes,terrain){
- const geos=routes.filter(r=>r.k==='walk').map(r=>ribbon(r.p,2.1,.28,terrain));
+ const geos=routes.filter(r=>r.k==='walk'&&!r.market).map(r=>ribbon(r.p,2.1,.28,terrain));
  addMerged(scene,geos,new THREE.MeshStandardMaterial({color:'#bcad8c',roughness:1,side:THREE.DoubleSide}));
 }
 
