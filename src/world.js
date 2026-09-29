@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createBridgeStructures} from './bridge-structures.js';
 import {createRiverWater} from './water.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -21,25 +22,26 @@ const widths={motorway:22,trunk:20,primary:21,secondary:16,tertiary:12,residenti
 function ribbon(points,width,yOffset=0,terrain=null,bridge=false){
  const samples=[];let length=0;
  for(let i=0;i<points.length-1;i++){const a=points[i],b=points[i+1],distance=Math.hypot(b[0]-a[0],b[1]-a[1]),steps=1;for(let j=0;j<steps;j++){const f=j/steps;samples.push([THREE.MathUtils.lerp(a[0],b[0],f),THREE.MathUtils.lerp(a[1],b[1],f),THREE.MathUtils.lerp(a[2],b[2],f),length+distance*f]);}length+=distance;}
- samples.push([...points.at(-1),length]);const p=[],uv=[],idx=[];
+ const last=points.at(-1);samples.push([last[0],last[1],last[2],length]);const p=[],uv=[],idx=[];
  for(let i=0;i<samples.length;i++){const a=samples[Math.max(0,i-1)],b=samples[Math.min(samples.length-1,i+1)],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz)||1,c=samples[i],nx=-dz/len*width/2,nz=dx/len*width/2;
  for(const side of [1,-1]){const x=c[0]+nx*side,z=c[1]+nz*side,y=terrain&&!bridge?terrainHeight(terrain,x,z):c[2];p.push(x,y+yOffset,z);}uv.push(0,c[3]/9,1,c[3]/9);if(i)idx.push(i*2-2,i*2,i*2-1,i*2-1,i*2,i*2+1);}
- const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return terrain&&!bridge?drapeGeometry(g,terrain,yOffset):g;
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return terrain?drapeGeometry(g,terrain,bridge?0:yOffset,bridge):g;
 }
 function polygon(points,yOffset=0){let contour=points.map(p=>new THREE.Vector2(p[0],p[1]));if(contour.length<3)return null;let triangles=THREE.ShapeUtils.triangulateShape(contour,[]);const pos=points.flatMap(p=>[p[0],p[2]+yOffset,p[1]]),g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(triangles.flatMap(t=>[t[2],t[1],t[0]]));g.computeVertexNormals();return g;}
 function addMerged(scene,geos,mat){if(!geos.length)return;if(geos.some(g=>!g.attributes.uv))geos.forEach(g=>g.deleteAttribute('uv'));const g=mergeGeometries(geos);geos.forEach(g=>g.dispose());const mesh=new THREE.Mesh(g,mat);mesh.receiveShadow=true;scene.add(mesh);return mesh;}
 export function makeStreets(scene,data,terrain){
  const roads=[],lines=[],bridges=[],sidewalks=[],parkGeo=[],waters=[],traffic=[];
- for(const road of data.roads){if(road.p.length<2)continue;const w=widths[road.k]||8;const offset=road.bridge?10:.24;const g=ribbon(road.p,w,offset,terrain,road.bridge);if(!road.bridge)sidewalks.push(ribbon(road.p,w+4,.13,terrain));(road.bridge?bridges:roads).push(g);
- if(!road.bridge)for(const point of [road.p[0],road.p.at(-1)]){const cap=new THREE.CircleGeometry(w/2,10);cap.rotateX(-Math.PI/2);cap.translate(point[0],0,point[1]);roads.push(drapeGeometry(cap,terrain,.24));}
- if(w>=12){lines.push(ribbon(road.p,.25,offset+.06,terrain,road.bridge));if(road.p.length>2)traffic.push(road);}}
+ for(const road of data.roads){if(road.p.length<2)continue;const w=road.w||widths[road.k]||8;const offset=.24;const g=ribbon(road.p,w,offset,terrain,road.profile);if(!road.bridge)sidewalks.push(ribbon(road.p,w+4,.13,terrain,road.profile));(road.bridge?bridges:roads).push(g);
+ if(!road.profile)for(const point of [road.p[0],road.p.at(-1)]){const cap=new THREE.CircleGeometry(w/2,10);cap.rotateX(-Math.PI/2);cap.translate(point[0],0,point[1]);roads.push(drapeGeometry(cap,terrain,.24));}
+ if(w>=12){lines.push(ribbon(road.p,.25,offset+.06,terrain,road.profile));if(road.p.length>2)traffic.push(road);}}
  addMerged(scene,sidewalks,new THREE.MeshStandardMaterial({color:'#b8ad92',roughness:1,side:THREE.DoubleSide}));
  const asphalt=new THREE.MeshStandardMaterial({color:'#454c49',roughness:.96,side:THREE.DoubleSide});addMerged(scene,roads,asphalt);addMerged(scene,bridges,asphalt);
  const stripe=new Uint8Array(4*64);for(let i=0;i<64;i++)stripe.set([255,255,255,i<32?255:0],i*4);const texture=new THREE.DataTexture(stripe,1,64);texture.wrapT=THREE.RepeatWrapping;texture.needsUpdate=true;addMerged(scene,lines,new THREE.MeshStandardMaterial({color:'#e1c787',map:texture,alphaTest:.5,roughness:1,side:THREE.DoubleSide}));
  for(const p of data.parks){const g=polygon(p);if(g)parkGeo.push(drapeGeometry(g,terrain,.04));}addMerged(scene,parkGeo,new THREE.MeshStandardMaterial({color:'#354b32',roughness:1,side:THREE.DoubleSide}));
  for(const water of data.water){let p=water.p.map(p=>[p[0],p[1],2]);if(water.river)waters.push(ribbon(p,water.name?.includes('基隆')?140:230,.2));else {let g=polygon(p,.2);if(g)waters.push(g);}}
  waters.forEach(g=>g.deleteAttribute('uv'));const geometry=mergeGeometries(waters);waters.forEach(g=>g.dispose());const river=createRiverWater(geometry);scene.add(river.mesh);
- return {river,traffic};
+ const infrastructure=createBridgeStructures(scene,data.roads,terrain);
+ return {river,traffic,infrastructure};
 }
 function inside(x,z,poly){let yes=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])yes=!yes;}return yes;}
 export function makeTrees(scene,parks,terrain,walkways=[]){

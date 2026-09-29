@@ -100,3 +100,10 @@ The destination strip supports left- or middle-mouse dragging, native touch swip
 ## Link previews
 
 Open Graph and Twitter large-image metadata are in the initial HTML, so link crawlers do not need to run WebGL. The 1200×630 preview is an actual render of Taipei 101 and the surrounding buildings. Start the local server on port 5188 and run `npm run social:capture` to regenerate it, or set `CAPTURE_URL` to another running deployment.
+
+
+## Bridges and elevated roads
+
+OSM bridge, viaduct and positive-layer roads receive concrete decks, paired steel girders, guardrails, pier caps, columns and footings. Connected approach roads ramp up to the deck, and traffic follows the same elevation profile as the pavement. These are procedural structural interpretations; exact bridge engineering and surveyed deck elevations are not available in the snapshot. Rebuild both city and activity data after road-profile changes.
+
+Structural parts share box geometry and two materials, batched by spatial cell for frustum culling. They are static instances with no per-frame simulation, and remain visible in river reflections.

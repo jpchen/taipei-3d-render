@@ -1,4 +1,5 @@
 import {readFile,writeFile} from 'node:fs/promises';
+import {buildRoadNetwork} from '../src/roads.js';
 import {terrainHeight} from '../src/terrain.js';
 const raw=JSON.parse(await readFile('assets/map-source.json','utf8'));
 const terrain=JSON.parse(await readFile('public/data/terrain.json','utf8'));
@@ -9,10 +10,9 @@ try{walkways=JSON.parse(await readFile('assets/walkways-source.json','utf8'));}c
  const query='[out:json][timeout:120];way[highway~"^(footway|pedestrian|path)$"][access!="private"][tunnel!="yes"](25.015,121.49,25.075,121.595);out geom;';
  const r=await fetch('https://overpass.private.coffee/api/interpreter',{method:'POST',body:new URLSearchParams({data:query}),signal:AbortSignal.timeout(150000)});if(!r.ok)throw Error(`Walkway download: ${r.status}`);walkways=await r.json();if(walkways.remark||!walkways.elements?.length)throw Error(walkways.remark||'No walkways');await writeFile('assets/walkways-source.json',JSON.stringify(walkways));
 }
-const widths={motorway:22,trunk:20,primary:21,secondary:16,tertiary:12,residential:7,unclassified:6,living_street:5};
-const roads=raw.elements.filter(e=>e.t.highway&&e.t.tunnel!=='yes'&&e.t.access!=='private').map(e=>({id:e.id,k:e.t.highway,oneway:e.t.oneway==='yes'?1:e.t.oneway==='-1'?-1:0,w:widths[e.t.highway]||7,bridge:e.t.bridge==='yes',p:e.p}));
+const roads=buildRoadNetwork(raw.elements,terrain).filter(r=>!r.private);
 const walks=walkways.elements.filter(e=>e.geometry?.length>1&&e.tags?.bridge!=='yes'&&e.tags?.access!=='private'&&e.tags?.tunnel!=='yes').map(e=>({id:e.id,k:'walk',w:2,p:e.geometry.map(p=>[p.lon,p.lat])}));
-const routes=[...roads,...walks].map(r=>({...r,p:r.p.map(([lon,lat])=>{const [x,z]=project([lon,lat]);return [+x.toFixed(2),+z.toFixed(2),+elevation(lon,lat).toFixed(2)];})})).filter(r=>r.p.length>1);
+const routes=[...roads,...walks.map(r=>({...r,p:r.p.map(([lon,lat])=>{const [x,z]=project([lon,lat]);return [+x.toFixed(2),+z.toFixed(2),+elevation(lon,lat).toFixed(2)];})}))].filter(r=>r.p.length>1);
 const market=JSON.parse(await readFile('public/data/market.json','utf8'));
 const parks=raw.elements.filter(e=>e.t.leisure==='park').map(e=>e.p);
 function inside(x,z,p){let yes=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const a=p[i],b=p[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])yes=!yes;}return yes;}

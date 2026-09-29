@@ -69,7 +69,8 @@ function sample(route,distance,out){
   distance=THREE.MathUtils.clamp(distance,0,route.length-.0001);let lo=0,hi=route.distance.length-1;
   while(hi-lo>1){const m=(lo+hi)>>1;if(route.distance[m]<=distance)lo=m;else hi=m;}
   const a=route.p[lo],b=route.p[hi],span=route.distance[hi]-route.distance[lo]||1,t=(distance-route.distance[lo])/span;
-  out.x=THREE.MathUtils.lerp(a[0],b[0],t);out.z=THREE.MathUtils.lerp(a[1],b[1],t);out.y=THREE.MathUtils.lerp(a[2],b[2],t)+(route.bridge?10.8:route.k==='walk'?1.4:.9);
+  out.x=THREE.MathUtils.lerp(a[0],b[0],t);out.z=THREE.MathUtils.lerp(a[1],b[1],t);out.y=THREE.MathUtils.lerp(a[2],b[2],t)+(route.profile?.32:route.k==='walk'?1.4:.9);
+  out.lift=route.profile?THREE.MathUtils.lerp(a[2]-a[3],b[2]-b[3],t):0;
   out.dx=(b[0]-a[0])/span;out.dz=(b[1]-a[1])/span;return out;
 }
 
@@ -108,7 +109,7 @@ export async function createCityLife(scene,dusk,{reducedMotion=false,terrain}={}
         // Taiwan drives on the right. Each direction gets its own lane;
         // pedestrian routes remain on actual mapped footways.
         const lane=walking?(seed-.5)*(r.market?3.2:1.5):r.oneway?(seed-.5)*Math.max(1,r.w-5):direction*Math.min(r.w*.22,4.5);
-        point.x+=point.dz*lane;point.z-=point.dx*lane;if(!r.bridge)point.y=terrainHeight(terrain,point.x,point.z)+.32;
+        point.x+=point.dz*lane;point.z-=point.dx*lane;point.y=terrainHeight(terrain,point.x,point.z)+(r.profile?point.lift:0)+.32;
         if(r.marketStreet&&marketBounds&&point.x>marketBounds[0]&&point.x<marketBounds[2]&&point.z>marketBounds[1]&&point.z<marketBounds[3])continue;
         const distance=Math.hypot(point.x-camera.position.x,point.y-camera.position.y,point.z-camera.position.z);
         if(distance>(walking?personDistance:vehicleDistance))continue;

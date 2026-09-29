@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir, rename, readdir, unlink } from 'node:fs/pro
 import { ShapeUtils, Vector2, Color } from 'three';
 import { gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
+import {buildRoadNetwork} from '../src/roads.js';
 import {terrainHeight} from '../src/terrain.js';
 
 const raw=JSON.parse(await readFile('public/data/taipei.json','utf8').catch(()=>readFile('assets/map-source.json','utf8')));
@@ -30,11 +31,11 @@ function colorValue(value,fallback){return /^#[0-9a-f]{3,6}$/i.test(value||'')||
 function encodedColor(value){const c=new Color(value);return [c.r,c.g,c.b].map(x=>Math.round(x*255));}
 function pointInside(x,y,poly){let result=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)result=!result;}return result;}
 function edgeDistance(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy);}
-let chunks=new Map(),roads=[],parks=[],water=[],architecture=[],count=0,known=0,styleCounts=Array(6).fill(0);
+let chunks=new Map(),roads=buildRoadNetwork(raw.elements,terrain),parks=[],water=[],architecture=[],count=0,known=0,styleCounts=Array(6).fill(0);
 for(const {t,p,id} of raw.elements){
  if(p.length<2)continue;
  if(!t.building){const points=p.map(c=>{const [x,z]=project(c);return [+x.toFixed(1),+z.toFixed(1),+elev(c).toFixed(1)];});
-  if(t.highway)roads.push({p:points,k:t.highway,bridge:t.bridge==='yes'});
+  if(t.highway)continue;
   else if(t.leisure==='park')parks.push(points);
   else if(t.waterway==='river')water.push({p:points,river:true,name:t.name});
   else if(t.natural==='water')water.push({p:points});continue;

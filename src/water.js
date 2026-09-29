@@ -37,7 +37,7 @@ export function createRiverWater(geometry){
   lastReflection=time;const hidden=[];
   // Reflections retain terrain, architecture and landmark silhouettes. Tiny
   // agents/roof accessories are not worth drawing twice at 512 pixels.
-  for(const object of scene.children)if(object.visible&&(object.isInstancedMesh||object.name.startsWith('Shilin:'))){hidden.push(object);object.visible=false;}
+  for(const object of scene.children)if(object.visible&&(object.isInstancedMesh&&!object.name.startsWith('Bridge ')||object.name.startsWith('Shilin:'))){hidden.push(object);object.visible=false;}
   try{reflect.call(mesh,renderer,scene,camera);stats.reflectionFrames++;}finally{for(const object of hidden)object.visible=true;}
  };
  function update(elapsed,camera,lighting,nextQuality,reducedMotion){
