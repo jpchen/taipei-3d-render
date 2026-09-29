@@ -1,0 +1,23 @@
+[
+  {
+    "id": "ximen",
+    "name": "Ximending / Red House",
+    "zh": "西門町・西門紅樓",
+    "description": "Pedestrian lanes, bright signs and the Red House plaza.",
+    "lon": 121.50683,
+    "lat": 25.0422,
+    "bounds": [
+      121.5058,
+      25.04165,
+      121.5087,
+      25.0452
+    ],
+    "target": 5,
+    "offset": [
+      110,
+      100,
+      135
+    ],
+    "groundRelative": true
+  }
+]

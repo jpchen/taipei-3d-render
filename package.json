@@ -26,7 +26,9 @@
     "social:capture": "node scripts/capture-social.mjs",
     "data:signals": "node scripts/prepare-signals.mjs",
     "data:landmarks": "node scripts/prepare-landmark-sites.mjs",
-    "preview:landmarks": "node scripts/preview-landmarks.mjs"
+    "preview:landmarks": "node scripts/preview-landmarks.mjs",
+    "data:places": "node scripts/prepare-places.mjs",
+    "data:places:fetch": "node scripts/fetch-places.mjs"
   },
   "dependencies": {
     "three": "^0.183.2"

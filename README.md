@@ -124,3 +124,10 @@ The theater and concert hall are individually placed along the square's shared a
 The Grand Hotel adds an exterior staircase with 84 steps, six landings, balustrades and an arrival connection to an open ceremonial gate replacing the generic solid gate extrusion. It shares the hotel's orientation, adapts to the terrain and adds one static drawing batch. Dimensions and step count are illustrative, guided by the [hotel's exterior reference](https://www.grand-hotel.org/KR/official/about.aspx?gh=TP) and [entrance photographs](https://capturedbymark.wordpress.com/2012/09/20/the-grand-hotel-a-taipei-gem/), not a survey. Existing Blender assets remain unchanged; these site corrections are applied in Three.js.
 
 `npm run preview:landmarks` produces offline CPU geometry previews against OSM outlines in `test-results/`; these verify layout without a browser, and are not screenshots of the full lighting/material pipeline. `npm run test:data` also verifies landmark model loading, facing directions, bounds, duplicate exclusions and staircase terrain clearance.
+
+
+## Social destinations
+
+Ximending / Red House adds a mapped, low-rise Red House model, café seating, parasols, wayfinding signs, small stalls and an illustrative street performer. Pedestrians reuse the existing city-life pool on OSM walking routes. Props share geometry in instanced batches and disappear beyond 1.3 km (650 m in battery saver); no per-prop light sources are added. Businesses, performers and furnishings are illustrative rather than a live inventory. [Taipei Travel's Red House reference](https://www.travel.taipei/en/attraction/details/503) informs the destination.
+
+`src/social-places.json` defines these destinations. Run `npm run data:places` and `npm run data:activity` after changing them. `assets/places` contains supplementary OSM extracts, fetched by `npm run data:places:fetch`; existing snapshots remain available for reproducible offline builds.

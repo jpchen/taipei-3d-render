@@ -18,4 +18,5 @@ const parks=raw.elements.filter(e=>e.t.leisure==='park').map(e=>e.p);
 function inside(x,z,p){let yes=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const a=p[i],b=p[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])yes=!yes;}return yes;}
 for(const route of routes){if(route.k==='walk'){const p=route.p[Math.floor(route.p.length/2)];route.park=parks.some(poly=>inside(p[0]/100800+121.54,25.05-p[1]/111320,poly));}if(market.roadIds.includes(route.id))route.marketStreet=true;}
 routes.push(...market.routes);
+try{const {places}=JSON.parse(await readFile('public/data/places.json'));for(const place of places)for(const path of place.routes){const existing=routes.find(r=>r.k==='walk'&&Math.floor(r.id)===Math.floor(path.id));if(existing){existing.place=place.id;}else routes.push(path);}}catch(e){if(e.code!=='ENOENT')throw e;}
 await writeFile('public/data/activity.json',JSON.stringify({source:'© OpenStreetMap contributors, ODbL 1.0',marketBounds:market.bounds,routes}));console.log('Prepared activity paths:',roads.length,'roads;',walks.length,'walkways');

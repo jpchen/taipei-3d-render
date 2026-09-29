@@ -98,7 +98,7 @@ export async function createCityLife(scene,dusk,{reducedMotion=false,terrain}={}
     const vehicleDistance=low?1800:3000,personDistance=low?300:700;
     for(const r of active){
       const walking=r.k==='walk',highway=r.k==='motorway'||r.k==='trunk';
-      const density=walking?(r.market?2.0:r.park?8:15):highway?130:65,amount=Math.min(walking?(r.market?160:70):24,Math.max(1,Math.floor(r.length/density)));
+      const density=walking?(r.market?2.0:r.place?4:r.park?8:15):highway?130:65,amount=Math.min(walking?(r.market?160:70):24,Math.max(1,Math.floor(r.length/density)));
       for(let i=0;i<amount;i++){
         const seed=hash(r.id+i*17.3),kind=walking?'person':seed<.065&&!highway?'bus':seed<.32&&!highway?'scooter':'car';
         const cap=Math.floor(caps[kind]*(low?.45:1));if(counts[kind]>=cap)continue;
