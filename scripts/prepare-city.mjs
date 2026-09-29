@@ -3,7 +3,7 @@ import { ShapeUtils, Vector2, Color } from 'three';
 import { gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import {buildRoadNetwork} from '../src/roads.js';
-import {replacedByLandmark,stationAncillaryHeight} from '../src/landmark-layout.js';
+import {replacedByLandmark,stationAncillaryHeight,insidePolygon} from '../src/landmark-layout.js';
 import {terrainHeight} from '../src/terrain.js';
 
 const raw=JSON.parse(await readFile('public/data/taipei.json','utf8').catch(()=>readFile('assets/map-source.json','utf8')));
@@ -87,7 +87,7 @@ for(const {t,p,id} of raw.elements){
  }
  count++;
 }
-const shore=JSON.parse(await readFile('assets/places/dadaocheng-shore.json','utf8'));water.push({p:shore.p.map(c=>{const [x,z]=project(c);return [x,z,2];})});
+const shore=JSON.parse(await readFile('assets/places/dadaocheng-shore.json','utf8'));for(const outer of shore.outer)water.push({p:outer.map(c=>[...project(c),2]),holes:shore.holes.filter(h=>insidePolygon(h[0],outer)).map(h=>h.map(c=>[...project(c),2]))});
 await mkdir('public/data/buildings',{recursive:true});const manifest=[],newFiles=new Set();
 for(const [key,g] of chunks){
  const pos=new Float32Array(g.pos),nor=new Int8Array(g.nor),col=new Uint8Array(g.col),style=new Uint8Array(g.style),uv=new Float32Array(g.uv),idx=new Uint32Array(g.idx);
