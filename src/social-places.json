@@ -19,5 +19,26 @@
       135
     ],
     "groundRelative": true
+  },
+  {
+    "id": "dadaocheng",
+    "name": "Dadaocheng Wharf",
+    "zh": "大稻埕碼頭",
+    "description": "Riverside food containers, café tables and an evening promenade.",
+    "lon": 121.50743,
+    "lat": 25.0563,
+    "bounds": [
+      121.5067,
+      25.0556,
+      121.5084,
+      25.0573
+    ],
+    "target": 3,
+    "offset": [
+      -90,
+      80,
+      125
+    ],
+    "groundRelative": true
   }
 ]
