@@ -23,7 +23,8 @@
     "test:data": "node --test tests/*.test.mjs",
     "data:market": "node scripts/prepare-market.mjs",
     "models:hotel": "blender -b --python scripts/build-grand-hotel.py",
-    "social:capture": "node scripts/capture-social.mjs"
+    "social:capture": "node scripts/capture-social.mjs",
+    "data:signals": "node scripts/prepare-signals.mjs"
   },
   "dependencies": {
     "three": "^0.183.2"

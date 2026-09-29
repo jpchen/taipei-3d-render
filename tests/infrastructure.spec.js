@@ -1,0 +1,8 @@
+import {test,expect} from '@playwright/test';
+test('bridge decks have piers and girders, and nearby intersections have signal hardware',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});await page.goto('/');await page.waitForFunction(()=>window.__taipei?.ready,null,{timeout:90000});await expect(page.locator('#loading')).toHaveCount(0);
+ const stats=await page.evaluate(()=>__taipei.infrastructure.stats);expect(stats.bridges).toBeGreaterThan(490);expect(stats.piers).toBeGreaterThan(500);expect(stats.parts).toBeGreaterThan(3000);
+ await page.evaluate(async()=>{const {roads}=await(await fetch('/data/city.json')).json(),r=roads.find(r=>r.bridge&&r.name.includes('Zhongxing')&&r.p.length>60),p=r.p[Math.floor(r.p.length/2)];__taipei.camera.position.set(p[0]+100,p[2]+15,p[1]+100);__taipei.controls.target.set(p[0],p[2]-5,p[1]);__taipei.controls.update();});await page.waitForTimeout(500);await page.screenshot({path:'test-results/bridge-structure.png'});
+ await page.locator('[data-place="0"]').click();await page.waitForTimeout(3800);await page.locator('#street-view').click();await page.waitForTimeout(3300);await expect.poll(()=>page.evaluate(()=>__taipei.signals.stats.visibleSignals)).toBeGreaterThan(0);expect(await page.evaluate(()=>__taipei.signals.stats.drawCalls)).toBeLessThanOrEqual(4);await page.screenshot({path:'test-results/intersection-signals.png'});
+ await page.evaluate(()=>{__taipei.camera.position.set(4000,10000,3500);__taipei.controls.target.set(2000,0,1800);__taipei.controls.update();});await expect.poll(()=>page.evaluate(()=>__taipei.signals.stats.visibleSignals)).toBe(0);expect(errors).toEqual([]);
+});

@@ -107,3 +107,9 @@ Open Graph and Twitter large-image metadata are in the initial HTML, so link cra
 OSM bridge, viaduct and positive-layer roads receive concrete decks, paired steel girders, guardrails, pier caps, columns and footings. Connected approach roads ramp up to the deck, and traffic follows the same elevation profile as the pavement. These are procedural structural interpretations; exact bridge engineering and surveyed deck elevations are not available in the snapshot. Rebuild both city and activity data after road-profile changes.
 
 Structural parts share box geometry and two materials, batched by spatial cell for frustum culling. They are static instances with no per-frame simulation, and remain visible in river reflections.
+
+## Intersection signals
+
+`npm run data:signals` derives illustrative signal placement from mapped surface-road junctions. Nearby intersections have reusable poles, overhead arms and red/amber/green lamps, with an all-red clearance phase between crossing directions. Placement and timing are not an inventory of actual Taipei signal hardware or live traffic control; vehicles currently continue along their routes independently of the lights.
+
+Signals use at most four drawing batches, capped at 320 visible heads (120 in battery saver), with distance and camera culling. Lamp colors update once per second without dynamic light sources; reduced motion freezes the phase.
