@@ -1,3 +1,4 @@
+import {extendZoo} from './map-data.mjs';
 import { readFile, writeFile, mkdir, rename, readdir, unlink } from 'node:fs/promises';
 import { ShapeUtils, Vector2, Color } from 'three';
 import { gzipSync } from 'node:zlib';
@@ -7,6 +8,7 @@ import {replacedByLandmark,stationAncillaryHeight,insidePolygon} from '../src/la
 import {terrainHeight} from '../src/terrain.js';
 
 const raw=JSON.parse(await readFile('public/data/taipei.json','utf8').catch(()=>readFile('assets/map-source.json','utf8')));
+await extendZoo(raw);
 const terrain=JSON.parse(await readFile('public/data/terrain.json','utf8'));
 const project=([lon,lat])=>[(lon-121.54)*100800,(25.05-lat)*111320];
 const elev=point=>{const [x,z]=project(point);return terrainHeight(terrain,x,z);};
@@ -48,7 +50,7 @@ for(const {t,p,id} of raw.elements){
  const area=Math.abs(ShapeUtils.area(poly));if(area<9)continue;
  const seed=random(id),heightSeed=((id*16807)%2147483647)/2147483647;
  let height=parseFloat(t.height)||parseFloat(t['building:levels'])*3.3;
- if(height)known++;else height=({197752239:27,197752243:7,197752247:7,197752249:9,198342346:6}[id]??stationAncillaryHeight(t,center))??(t.building==='house'?10:t.building==='garage'?4:12+heightSeed*22+(area>600?heightSeed*28:0));
+ if(height)known++;else height=t['render:height']??({197752239:27,197752243:7,197752247:7,197752249:9,198342346:6}[id]??stationAncillaryHeight(t,center))??(t.building==='house'?10:t.building==='garage'?4:12+heightSeed*22+(area>600?heightSeed*28:0));
  height=Math.min(300,Math.max(3,height));
  const style=styleFor(t,height,seed),palette=palettes[style];styleCounts[style]++;
  const wallColor=encodedColor(colorValue(t['building:colour'],palette[Math.floor(random(id+9)*palette.length)]));

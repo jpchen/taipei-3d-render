@@ -28,7 +28,9 @@
     "data:landmarks": "node scripts/prepare-landmark-sites.mjs",
     "preview:landmarks": "node scripts/preview-landmarks.mjs",
     "data:places": "node scripts/prepare-places.mjs",
-    "data:places:fetch": "node scripts/fetch-places.mjs"
+    "data:places:fetch": "node scripts/fetch-places.mjs",
+    "data:zoo": "node scripts/prepare-zoo.mjs",
+    "models:zoo": "blender -b --python scripts/build-zoo-animals.py"
   },
   "dependencies": {
     "three": "^0.183.2"

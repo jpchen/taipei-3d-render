@@ -135,3 +135,10 @@ Ximending / Red House adds a mapped, low-rise Red House model, café seating, pa
 Dadaocheng Wharf replaces the generic PIER5 food-court extrusion with small container kiosks positioned within its mapped footprint, outdoor tables, overhead festoon lights, bicycles and promenade walkers. The [city's Dadaocheng waterfront reference](https://travel.taipei/file/4037/) informs its atmosphere; individual vendors are illustrative.
 
 Huashan 1914 preserves the mapped winery buildings, corrects untagged warehouse heights, and fills nearby pedestrian courtyards with illustrative maker stalls, shared art sculptures, parasols and visitors. The [park's visitor guide](https://www.huashan1914.com/en-US/Tour) describes the outdoor public spaces.
+
+
+Taipei Zoo extends the mapped city with zoo paths, low-rise buildings and wooded grounds. Four Blender animal assets provide 26 animated giraffes, zebras, elephants and flamingos at mapped animal points. Habitat outlines and animal counts are illustrative, not surveyed enclosures or a current inventory. Reference: [Taipei Zoo visitor map](https://english.zoo.gov.taipei/News_Content.aspx?n=9129E819DD99D6B4&s=63180DDF6A3C4C61&sms=F6417076988132FF). Click animal labels to visit each habitat.
+
+Animals share one instanced drawing batch per species, update at 20 Hz (10 Hz in battery saver), and are culled by distance and camera view. Reduced motion freezes movement; the activity toggle hides animals along with city life. The four GLBs total approximately 735 KB. Regenerate with `npm run models:zoo` and `npm run data:zoo`; refresh paths and buildings with `npm run data:places`, `npm run data:activity`, then `npm run data:prepare`. The editable source is `assets/zoo-animals.blend`.
+
+The Dadaocheng waterfront uses OSM Tamsui water relation 4010571, including island holes, to meet the mapped promenade. `node scripts/prepare-riverbank.mjs` refreshes its stored rings (or accepts a local OSM relation JSON as its first argument); follow with `npm run data:prepare`. It shares the existing river reflection pass.

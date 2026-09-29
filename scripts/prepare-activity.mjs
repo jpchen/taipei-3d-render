@@ -1,7 +1,9 @@
+import {extendZoo} from './map-data.mjs';
 import {readFile,writeFile} from 'node:fs/promises';
 import {buildRoadNetwork} from '../src/roads.js';
 import {terrainHeight} from '../src/terrain.js';
 const raw=JSON.parse(await readFile('assets/map-source.json','utf8'));
+await extendZoo(raw);
 const terrain=JSON.parse(await readFile('public/data/terrain.json','utf8'));
 const project=([lon,lat])=>[(lon-121.54)*100800,(25.05-lat)*111320];
 function elevation(lon,lat){const [x,z]=project([lon,lat]);return terrainHeight(terrain,x,z);}
