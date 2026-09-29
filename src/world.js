@@ -1,4 +1,4 @@
-import {createCivicHalls} from './civic-landmarks.js';
+import {createCivicHalls,createHotelStaircase,hotelStairProfile} from './civic-landmarks.js';
 import {sites as landmarkSites} from './landmark-layout.js';
 import * as THREE from 'three';
 import {createBridgeStructures} from './bridge-structures.js';
@@ -78,7 +78,8 @@ export function makeFootways(scene,routes,terrain){
 }
 
 export async function addCityLandmarks(scene,terrain){
- createCivicHalls(scene,terrain);
+ createCivicHalls(scene,terrain);createHotelStaircase(scene,terrain);
+ const hotel=landmarkSites.find(s=>s.name==='grand-hotel'),arrival=project(hotel.lon,hotel.lat);arrival.x+=Math.sin(hotel.angle)*126;arrival.z+=Math.cos(hotel.angle)*126;const drive=[arrival,project(121.525722,25.077104),project(121.52530,25.07711)].map(p=>[p.x,p.z,terrainHeight(terrain,p.x,p.z)]);const profile=hotelStairProfile(terrain);drive[0][2]=profile.ground+profile.bottom;addMerged(scene,[ribbon(drive,12,.3,terrain,true)],new THREE.MeshStandardMaterial({color:'#a49a85',roughness:1}));
  const entries=[['sun-yat-sen',121.56029,25.04001],['taipei-dome',121.55958,25.04239]];
  for(const site of landmarkSites.filter(s=>s.name==='taipei-main-station'||s.name==='grand-hotel'))entries.push([site.name,site.lon,site.lat,site.angle]);
  const loader=new GLTFLoader();await Promise.all(entries.map(async([name,lon,lat,angle=0])=>{const gltf=await loader.loadAsync(`/models/${name}.glb`),groups=new Map();gltf.scene.updateMatrixWorld(true);gltf.scene.traverse(o=>{if(!o.isMesh)return;const key=o.material.uuid;if(!groups.has(key))groups.set(key,{material:o.material,geometries:[]});const g=o.geometry.clone().applyMatrix4(o.matrixWorld);for(const attr of Object.keys(g.attributes))if(attr!=='position'&&attr!=='normal')g.deleteAttribute(attr);groups.get(key).geometries.push(g);});const group=new THREE.Group();group.name=name;group.rotation.y=angle;const p=project(lon,lat);p.y=terrainHeight(terrain,p.x,p.z);group.position.copy(p);for(const {material,geometries} of groups.values()){const mesh=new THREE.Mesh(mergeGeometries(geometries),material);geometries.forEach(g=>g.dispose());mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);}if(name==='taipei-main-station'){group.rotation.y=0;group.position.set(0,0,0);const localSize=new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3());group.scale.set(156/localSize.x,33/localSize.y,127/localSize.z);group.rotation.y=angle;group.position.copy(p);}scene.add(group);}));

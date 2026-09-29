@@ -31,3 +31,26 @@ export function createCivicHalls(scene,terrain){
   const x=(site.lon-121.54)*100800,z=(25.05-site.lat)*111320;group.position.set(x,terrainHeight(terrain,x,z),z);group.userData.footprintId=site.id;scene.add(group);
  }
 }
+export function hotelStairProfile(terrain){
+ const site=sites.find(s=>s.name==='grand-hotel'),x=(site.lon-121.54)*100800,z=(25.05-site.lat)*111320,ground=terrainHeight(terrain,x,z);
+ // End landing must clear the uphill edge as well as the centerline.
+ const bottom=Math.max(...[113,116,126].flatMap(d=>[-23,0,23].map(u=>terrainHeight(terrain,x+Math.cos(site.angle)*u+Math.sin(site.angle)*d,z-Math.sin(site.angle)*u+Math.cos(site.angle)*d))))-ground+.35;
+ return {site,x,z,ground,top:2,bottom,start:45,end:116,width:32,flights:6,stepsPerFlight:14};
+}
+export function createHotelStaircase(scene,terrain){
+ const p=hotelStairProfile(terrain),{box,finish}=builder(),run=(p.end-p.start)/p.flights,drop=(p.top-p.bottom)/p.flights;
+ for(let flight=0;flight<p.flights;flight++){
+  const start=p.start+flight*run,top=p.top-flight*drop;
+  for(let step=0;step<p.stepsPerFlight;step++){
+   const tread=(run-3)/p.stepsPerFlight,height=top-(step+1)*drop/p.stepsPerFlight,distance=start+(step+.5)*tread;
+   // Solid masonry down to the hillside avoids floating flights over coarse terrain.
+   box('stone',0,height-2,distance,p.width,4,tread+.02);
+   for(const side of [-1,1]){box('stone',side*(p.width/2+.3),height+.45,distance,.6,.9,tread+.02);if(step%3===0)box('stone',side*(p.width/2+.3),height+.9,distance,.8,1.2,.8);}
+  }
+  const landing=start+run-1.5;box('stone',0,top-drop-2,landing,p.width+2,4,3);
+  for(const side of [-1,1])box('stone',side*(p.width/2+.3),top-drop+.45,landing,.6,.9,3);
+ }
+ box('stone',0,p.bottom-2,121,46,4,10);
+ const group=finish('grand-hotel-staircase');group.position.set(p.x,p.ground,p.z);group.rotation.y=p.site.angle;group.userData={steps:p.flights*p.stepsPerFlight,landings:p.flights};scene.add(group);
+ const gateBuilder=builder();for(const x of [-14,-5,5,14]){gateBuilder.box('stone',x,.35,0,1.6,.7,1.6);gateBuilder.box('red',x,3.5,0,1,7,1);}gateBuilder.box('red',0,6.5,0,30,1,1.3);gateBuilder.roof(33,6,7,2);const gate=gateBuilder.finish('grand-hotel-entrance-gate'),gx=(121.525722-121.54)*100800,gz=(25.05-25.077104)*111320;gate.position.set(gx,terrainHeight(terrain,gx,gz),gz);gate.rotation.y=p.site.angle;scene.add(gate);return group;
+}
