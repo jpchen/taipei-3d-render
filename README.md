@@ -133,3 +133,5 @@ Ximending / Red House adds a mapped, low-rise Red House model, café seating, pa
 `src/social-places.json` defines these destinations. Run `npm run data:places` and `npm run data:activity` after changing them. `assets/places` contains supplementary OSM extracts, fetched by `npm run data:places:fetch`; existing snapshots remain available for reproducible offline builds.
 
 Dadaocheng Wharf replaces the generic PIER5 food-court extrusion with small container kiosks positioned within its mapped footprint, outdoor tables, overhead festoon lights, bicycles and promenade walkers. The [city's Dadaocheng waterfront reference](https://travel.taipei/file/4037/) informs its atmosphere; individual vendors are illustrative.
+
+Huashan 1914 preserves the mapped winery buildings, corrects untagged warehouse heights, and fills nearby pedestrian courtyards with illustrative maker stalls, shared art sculptures, parasols and visitors. The [park's visitor guide](https://www.huashan1914.com/en-US/Tour) describes the outdoor public spaces.

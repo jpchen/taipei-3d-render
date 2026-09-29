@@ -40,5 +40,26 @@
       125
     ],
     "groundRelative": true
+  },
+  {
+    "id": "huashan",
+    "name": "Huashan 1914",
+    "zh": "華山1914文化創意產業園區",
+    "description": "Old winery courtyards, small markets and outdoor art.",
+    "lon": 121.5293,
+    "lat": 25.0446,
+    "bounds": [
+      121.5283,
+      25.0439,
+      121.53045,
+      25.0458
+    ],
+    "target": 4,
+    "offset": [
+      -120,
+      105,
+      150
+    ],
+    "groundRelative": true
   }
 ]

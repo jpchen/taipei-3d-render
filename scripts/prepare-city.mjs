@@ -48,7 +48,7 @@ for(const {t,p,id} of raw.elements){
  const area=Math.abs(ShapeUtils.area(poly));if(area<9)continue;
  const seed=random(id),heightSeed=((id*16807)%2147483647)/2147483647;
  let height=parseFloat(t.height)||parseFloat(t['building:levels'])*3.3;
- if(height)known++;else height=stationAncillaryHeight(t,center)??(t.building==='house'?10:t.building==='garage'?4:12+heightSeed*22+(area>600?heightSeed*28:0));
+ if(height)known++;else height=({197752239:27,197752243:7,197752247:7,197752249:9,198342346:6}[id]??stationAncillaryHeight(t,center))??(t.building==='house'?10:t.building==='garage'?4:12+heightSeed*22+(area>600?heightSeed*28:0));
  height=Math.min(300,Math.max(3,height));
  const style=styleFor(t,height,seed),palette=palettes[style];styleCounts[style]++;
  const wallColor=encodedColor(colorValue(t['building:colour'],palette[Math.floor(random(id+9)*palette.length)]));
