@@ -1,3 +1,5 @@
+import {createCivicHalls} from './civic-landmarks.js';
+import {sites as landmarkSites} from './landmark-layout.js';
 import * as THREE from 'three';
 import {createBridgeStructures} from './bridge-structures.js';
 import {createRiverWater} from './water.js';
@@ -60,13 +62,14 @@ export async function addTaipei101(scene,terrain){
  for(const {mat,geos} of groups.values()){geos.forEach(g=>{for(const key of Object.keys(g.attributes))if(key!=='position'&&key!=='normal')g.deleteAttribute(key);});const g=mergeGeometries(geos);geos.forEach(g=>g.dispose());const mesh=new THREE.Mesh(g,mat);mesh.castShadow=true;mesh.receiveShadow=true;landmark.add(mesh);}scene.add(landmark);return landmark;
 }
 export function addMemorial(scene,terrain){
- const center=project(121.5219,25.0347);center.y=terrainHeight(terrain,center.x,center.z);
- const white=new THREE.MeshStandardMaterial({color:'#c9c4ab',roughness:.85}),blue=new THREE.MeshStandardMaterial({color:'#264459',roughness:.45}),stone=new THREE.MeshStandardMaterial({color:'#aaa392',roughness:1});const group=new THREE.Group();group.position.copy(center);
+ const site=landmarkSites.find(s=>s.name==='cks-memorial'),center=project(site.lon,site.lat);center.y=terrainHeight(terrain,center.x,center.z);
+ const white=new THREE.MeshStandardMaterial({color:'#c9c4ab',roughness:.85}),blue=new THREE.MeshStandardMaterial({color:'#264459',roughness:.45}),stone=new THREE.MeshStandardMaterial({color:'#aaa392',roughness:1});const group=new THREE.Group();group.position.copy(center);group.name='cks-memorial';group.rotation.y=site.angle;
  const box=(w,h,d,y,mat)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.y=y;m.castShadow=true;m.receiveShadow=true;group.add(m);return m;};
  box(100,3,100,1.5,stone);box(82,5,82,5.5,white);box(60,30,60,23,white);
  const roof=new THREE.Mesh(new THREE.ConeGeometry(49,22,8),blue);roof.position.y=49;roof.rotation.y=Math.PI/8;roof.castShadow=true;group.add(roof);
  const cap=new THREE.Mesh(new THREE.ConeGeometry(24,13,8),blue);cap.position.y=64;cap.rotation.y=Math.PI/8;group.add(cap);
- for(const dz of [-145,145]){const hall=new THREE.Group();hall.position.set(-220,0,dz);let base=new THREE.Mesh(new THREE.BoxGeometry(110,20,65),new THREE.MeshStandardMaterial({color:'#a26143'}));base.position.y=10;hall.add(base);const roof=new THREE.Mesh(new THREE.ConeGeometry(76,22,4),new THREE.MeshStandardMaterial({color:'#ab8650'}));roof.scale.z=.65;roof.rotation.y=Math.PI/4;roof.position.y=30;hall.add(roof);group.add(hall);}scene.add(group);
+ // The broad west-facing staircase meets the plaza; halls are independent mapped models.
+ const stairGeometries=[];for(let i=0;i<28;i++){const h=8*(28-i)/28;stairGeometries.push(new THREE.BoxGeometry(.8,h,48).translate(-41-i*.8,h/2,0));}const stairs=new THREE.Mesh(mergeGeometries(stairGeometries),stone);stairGeometries.forEach(g=>g.dispose());stairs.receiveShadow=true;group.add(stairs);scene.add(group);
 }
 
 export function makeFootways(scene,routes,terrain){
@@ -75,6 +78,8 @@ export function makeFootways(scene,routes,terrain){
 }
 
 export async function addCityLandmarks(scene,terrain){
- const entries=[['sun-yat-sen',121.56029,25.04001],['taipei-main-station',121.51712,25.04772],['taipei-dome',121.55958,25.04239],['grand-hotel',121.52630,25.07860,-.397]];
- const loader=new GLTFLoader();await Promise.all(entries.map(async([name,lon,lat,angle=0])=>{const gltf=await loader.loadAsync(`/models/${name}.glb`),groups=new Map();gltf.scene.updateMatrixWorld(true);gltf.scene.traverse(o=>{if(!o.isMesh)return;const key=o.material.uuid;if(!groups.has(key))groups.set(key,{material:o.material,geometries:[]});const g=o.geometry.clone().applyMatrix4(o.matrixWorld);for(const attr of Object.keys(g.attributes))if(attr!=='position'&&attr!=='normal')g.deleteAttribute(attr);groups.get(key).geometries.push(g);});const group=new THREE.Group();group.name=name;group.rotation.y=angle;const p=project(lon,lat);p.y=terrainHeight(terrain,p.x,p.z);group.position.copy(p);for(const {material,geometries} of groups.values()){const mesh=new THREE.Mesh(mergeGeometries(geometries),material);geometries.forEach(g=>g.dispose());mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);}scene.add(group);}));
+ createCivicHalls(scene,terrain);
+ const entries=[['sun-yat-sen',121.56029,25.04001],['taipei-dome',121.55958,25.04239]];
+ for(const site of landmarkSites.filter(s=>s.name==='taipei-main-station'||s.name==='grand-hotel'))entries.push([site.name,site.lon,site.lat,site.angle]);
+ const loader=new GLTFLoader();await Promise.all(entries.map(async([name,lon,lat,angle=0])=>{const gltf=await loader.loadAsync(`/models/${name}.glb`),groups=new Map();gltf.scene.updateMatrixWorld(true);gltf.scene.traverse(o=>{if(!o.isMesh)return;const key=o.material.uuid;if(!groups.has(key))groups.set(key,{material:o.material,geometries:[]});const g=o.geometry.clone().applyMatrix4(o.matrixWorld);for(const attr of Object.keys(g.attributes))if(attr!=='position'&&attr!=='normal')g.deleteAttribute(attr);groups.get(key).geometries.push(g);});const group=new THREE.Group();group.name=name;group.rotation.y=angle;const p=project(lon,lat);p.y=terrainHeight(terrain,p.x,p.z);group.position.copy(p);for(const {material,geometries} of groups.values()){const mesh=new THREE.Mesh(mergeGeometries(geometries),material);geometries.forEach(g=>g.dispose());mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);}if(name==='taipei-main-station'){group.rotation.y=0;group.position.set(0,0,0);const localSize=new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3());group.scale.set(156/localSize.x,33/localSize.y,127/localSize.z);group.rotation.y=angle;group.position.copy(p);}scene.add(group);}));
 }

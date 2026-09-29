@@ -24,7 +24,9 @@
     "data:market": "node scripts/prepare-market.mjs",
     "models:hotel": "blender -b --python scripts/build-grand-hotel.py",
     "social:capture": "node scripts/capture-social.mjs",
-    "data:signals": "node scripts/prepare-signals.mjs"
+    "data:signals": "node scripts/prepare-signals.mjs",
+    "data:landmarks": "node scripts/prepare-landmark-sites.mjs",
+    "preview:landmarks": "node scripts/preview-landmarks.mjs"
   },
   "dependencies": {
     "three": "^0.183.2"

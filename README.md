@@ -113,3 +113,13 @@ Structural parts share box geometry and two materials, batched by spatial cell f
 `npm run data:signals` derives illustrative signal placement from mapped surface-road junctions. Nearby intersections have reusable poles, overhead arms and red/amber/green lamps, with an all-red clearance phase between crossing directions. Placement and timing are not an inventory of actual Taipei signal hardware or live traffic control; vehicles currently continue along their routes independently of the lights.
 
 Signals use at most four drawing batches, capped at 320 visible heads (120 in battery saver), with distance and camera culling. Lamp colors update once per second without dynamic light sources; reduced motion freezes the phase.
+
+
+## Landmark placement corrections
+
+`src/landmark-sites.json` records the OSM footprint IDs, oriented bounding boxes and centers for Taipei Main Station, the Liberty Square halls and the Grand Hotel. Regenerate with `npm run data:landmarks`, then `npm run data:prepare`. Custom landmarks replace their mapped generic building (including contained duplicates), rather than removing surrounding city blocks. Station canopies and untagged service structures receive restrained heights, and the existing Blender station asset is fitted to a 156 × 127 m envelope at the mapped rotation.
+
+The theater and concert hall are individually placed along the square's shared axis with their front stairs facing one another. Their geometry is merged into three material batches each. The memorial's duplicate generic building is removed and its entrance stair faces the plaza. Reference layout: [CKS Memorial Hall site map, page 14](https://tame.tw/pme36/PME36-booklet.pdf), [NTCH aerial photograph](https://npac-ntch.org/tender-and-announcement/announcement/10942-%E5%9C%8B%E5%AE%B6%E6%88%B2%E5%8A%87%E9%99%A2%E7%94%9F%E6%B4%BB%E5%BB%A3%E5%A0%B4%E6%B0%B4%E6%99%AF%E8%A8%AD%E6%96%BD%E5%99%B4%E6%B0%B4%E6%99%82%E9%96%93%E8%AA%AA%E6%98%8E), and [station satellite reference](https://www.mobile01.com/topicdetail.php?f=37&p=2&t=1534217). Coordinates come from the stored OSM snapshot; the geometry remains an architectural interpretation.
+
+
+`npm run preview:landmarks` produces offline CPU geometry previews against OSM outlines in `test-results/`; these verify layout without a browser, and are not screenshots of the full lighting/material pipeline. `npm run test:data` also verifies landmark model loading, facing directions, bounds, duplicate exclusions and staircase terrain clearance.

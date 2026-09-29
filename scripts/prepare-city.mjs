@@ -3,6 +3,7 @@ import { ShapeUtils, Vector2, Color } from 'three';
 import { gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import {buildRoadNetwork} from '../src/roads.js';
+import {replacedByLandmark,stationAncillaryHeight} from '../src/landmark-layout.js';
 import {terrainHeight} from '../src/terrain.js';
 
 const raw=JSON.parse(await readFile('public/data/taipei.json','utf8').catch(()=>readFile('assets/map-source.json','utf8')));
@@ -40,19 +41,21 @@ for(const {t,p,id} of raw.elements){
   else if(t.waterway==='river')water.push({p:points,river:true,name:t.name});
   else if(t.natural==='water')water.push({p:points});continue;
  }
- if(t.location==='underground'||(Number(t.layer)<0&&!t.height)||[23641610,189788192,442195153,25202548].includes(id))continue;
+ if(t.location==='underground'||(Number(t.layer)<0&&!t.height)||[189788192,442195153].includes(id)||replacedByLandmark(id,p))continue;
  const center=p.reduce((s,a)=>[s[0]+a[0]/p.length,s[1]+a[1]/p.length],[0,0]),[cx,cz]=project(center);
  if(Math.hypot(cx-(121.5645-121.54)*100800,cz-(25.05-25.0339)*111320)<85)continue;
  let poly=p.slice(0,-1).map(c=>new Vector2(...project(c)));if(poly.length<3)continue;if(ShapeUtils.isClockWise(poly))poly.reverse();
  const area=Math.abs(ShapeUtils.area(poly));if(area<9)continue;
  const seed=random(id),heightSeed=((id*16807)%2147483647)/2147483647;
  let height=parseFloat(t.height)||parseFloat(t['building:levels'])*3.3;
- if(height)known++;else height=t.building==='house'?10:t.building==='garage'?4:12+heightSeed*22+(area>600?heightSeed*28:0);
+ if(height)known++;else height=stationAncillaryHeight(t,center)??(t.building==='house'?10:t.building==='garage'?4:12+heightSeed*22+(area>600?heightSeed*28:0));
  height=Math.min(300,Math.max(3,height));
  const style=styleFor(t,height,seed),palette=palettes[style];styleCounts[style]++;
  const wallColor=encodedColor(colorValue(t['building:colour'],palette[Math.floor(random(id+9)*palette.length)]));
  const roofColor=encodedColor(colorValue(t['roof:colour'],style===3||style===5?'#ad6145':roofPalette[Math.floor(random(id+8)*roofPalette.length)]));
- const ground=elev(center),key=`${Math.floor(cx/1200)}_${Math.floor(cz/1200)}`;
+ const canopy=t.building==='roof'&&stationAncillaryHeight(t,center)!==null;
+ const ground=elev(center)+(canopy?height-.3:0);if(canopy)height=.3;
+ const key=`${Math.floor(cx/1200)}_${Math.floor(cz/1200)}`;
  if(!chunks.has(key))chunks.set(key,{pos:[],nor:[],col:[],style:[],uv:[],idx:[],center:[cx,cz]});const g=chunks.get(key);
  const pitched=poly.length===4&&(/gabled|hipped|pyramidal/.test(t['roof:shape']||'')||style===5&&height<40);
  const roofRise=pitched?Math.min(height*.25,parseFloat(t['roof:height'])||4):0,wallHeight=height-roofRise;
