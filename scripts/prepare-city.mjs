@@ -87,6 +87,7 @@ for(const {t,p,id} of raw.elements){
  }
  count++;
 }
+const shore=JSON.parse(await readFile('assets/places/dadaocheng-shore.json','utf8'));water.push({p:shore.p.map(c=>{const [x,z]=project(c);return [x,z,2];})});
 await mkdir('public/data/buildings',{recursive:true});const manifest=[],newFiles=new Set();
 for(const [key,g] of chunks){
  const pos=new Float32Array(g.pos),nor=new Int8Array(g.nor),col=new Uint8Array(g.col),style=new Uint8Array(g.style),uv=new Float32Array(g.uv),idx=new Uint32Array(g.idx);
