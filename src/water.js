@@ -9,7 +9,8 @@ function rippleNormals(){
 export function createRiverWater(geometry){
  // Water's reflection plane is local XY. Preserve geographic world XZ geometry.
  geometry.translate(0,-2.2,0).rotateX(Math.PI/2);
- const mesh=new Water(geometry,{textureWidth:512,textureHeight:512,waterNormals:rippleNormals(),waterColor:'#254f4e',sunColor:'#ffd29c',distortionScale:2.5,fog:true});
+ const cinematic=new URLSearchParams(globalThis.location?.search||'').has('film'),resolution=cinematic?2048:512;
+ const mesh=new Water(geometry,{textureWidth:resolution,textureHeight:resolution,waterNormals:rippleNormals(),waterColor:'#254f4e',sunColor:'#ffd29c',distortionScale:2.5,fog:true});
  mesh.name='Reflective rivers';mesh.rotation.x=-Math.PI/2;mesh.position.y=2.2;mesh.receiveShadow=true;
  const material=mesh.material,u=material.uniforms;
  Object.assign(u,{planarStrength:{value:1},skyTint:{value:new THREE.Color('#b5cde0')},horizonTint:{value:new THREE.Color('#e8b98c')}});
@@ -30,7 +31,7 @@ export function createRiverWater(geometry){
  float fresnel=.06+.94*pow(1.-theta,4.);
  vec3 outgoingLight=mix(waterColor*.65+sky*.10,reflected,fresnel)+specularLight*.4;`);
  const reflect=mesh.onBeforeRender;let lastReflection=-Infinity,quality='balanced',time=0;
- const stats={reflectionFrames:0,reflectionSize:512,reflectionHz:8,mode:'planar',flowTime:0};
+ const stats={reflectionFrames:0,reflectionSize:resolution,reflectionHz:8,mode:'planar',flowTime:0};
  mesh.onBeforeRender=(renderer,scene,camera)=>{
   u.eye.value.copy(camera.position);
   if(quality==='low'||document.hidden||time-lastReflection<1/stats.reflectionHz)return;
@@ -42,7 +43,7 @@ export function createRiverWater(geometry){
  };
  function update(elapsed,camera,lighting,nextQuality,reducedMotion){
   time=elapsed;quality=nextQuality;u.time.value=reducedMotion?0:elapsed;stats.flowTime=u.time.value;
-  stats.reflectionHz=quality==='high'?12:8;stats.mode=quality==='low'?'sky':'planar';u.planarStrength.value=quality==='low'?0:1;
+  stats.reflectionHz=cinematic?60:quality==='high'?12:8;stats.mode=quality==='low'?'sky':'planar';u.planarStrength.value=quality==='low'?0:1;
   u.eye.value.copy(camera.position);u.sunDirection.value.copy(lighting.sun.position).sub(lighting.sun.target.position).normalize();
   u.sunColor.value.copy(lighting.sun.color).multiplyScalar(lighting.sun.intensity*.35);u.skyTint.value.copy(lighting.state.sky);u.horizonTint.value.copy(lighting.state.fog);
  }
