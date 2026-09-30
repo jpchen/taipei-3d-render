@@ -66,9 +66,9 @@
     "id": "zoo",
     "name": "Taipei Zoo",
     "zh": "臺北市立動物園",
-    "description": "Giraffes, zebras, elephants and flamingos among wooded visitor paths.",
-    "lon": 121.5862763,
-    "lat": 24.9942758,
+    "description": "Enter the zoo, follow the visitor trail, meet pandas and penguins, then catch the Maokong gondola.",
+    "lon": 121.5810517,
+    "lat": 24.9986466,
     "bounds": [
       121.578,
       24.99,
@@ -77,9 +77,9 @@
     ],
     "target": 2,
     "offset": [
-      28,
-      27,
-      40
+      65,
+      65,
+      -80
     ],
     "groundRelative": true,
     "minAltitude": 18

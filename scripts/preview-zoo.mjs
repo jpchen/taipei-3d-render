@@ -1,0 +1,21 @@
+// CPU geometry previews: useful without a browser; not the WebGL lighting pipeline.
+import * as T from 'three';import {PNG} from 'pngjs';import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';import {createZoo} from '../src/zoo.js';import {terrainHeight} from '../src/terrain.js';
+const terrain=JSON.parse(readFileSync('public/data/terrain.json'));
+globalThis.document={hidden:false,createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){},fillText(){}})})};const NativeRequest=globalThis.Request;globalThis.Request=class extends NativeRequest{constructor(url,init){super(new URL(url,'http://local.test'),init);}};globalThis.ProgressEvent=class{constructor(type,p){Object.assign(this,p);}};globalThis.fetch=async r=>new Response(readFileSync('public'+new URL(r.url||r,'http://local.test').pathname));
+const scene=new T.Scene(),zoo=await createZoo(scene,terrain);mkdirSync('test-results',{recursive:true});const sun=new T.Vector3(-.3,1,.5).normalize();
+const views=zoo.data.habitats.filter(h=>['panda','red-panda','monkey','penguin'].includes(h.species)).map(h=>({name:h.species,p:[h.x,h.z],span:Math.max(45,h.radius*3),offset:[20,30,35]}));views.push({name:'entrance',p:zoo.data.entrance.p,span:110,offset:[35,45,-55]},{name:'gondola',p:zoo.data.gondola.at(-1).p,span:180,offset:[120,95,100]});
+for(const view of views){
+ const w=800,h=600,span=view.span,png=new PNG({width:w,height:h}),depth=new Float64Array(w*h).fill(Infinity),target=new T.Vector3(view.p[0],terrainHeight(terrain,...view.p)+(view.name==='gondola'?20:0),view.p[1]),camera=new T.OrthographicCamera(-span/2,span/2,span*h/w/2,-span*h/w/2,.1,4000);camera.position.copy(target).add(new T.Vector3(...view.offset));camera.lookAt(target);camera.updateMatrixWorld();zoo.update(12+views.indexOf(view),camera,'balanced');scene.updateMatrixWorld(true);for(let i=0;i<w*h;i++)png.data.set([71,85,63,255],i*4);
+ const screen=v=>{const p=v.clone().project(camera);return [(p.x+1)*w/2,(1-p.y)*h/2,p.z];};
+ function triangle(points,color){const [a,b,c]=points,area=(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);if(Math.abs(area)<.001||points.every(p=>p[2]<-1)||points.every(p=>p[2]>1))return;const minX=Math.max(0,Math.floor(Math.min(a[0],b[0],c[0]))),maxX=Math.min(w-1,Math.ceil(Math.max(a[0],b[0],c[0]))),minY=Math.max(0,Math.floor(Math.min(a[1],b[1],c[1]))),maxY=Math.min(h-1,Math.ceil(Math.max(a[1],b[1],c[1])));
+  for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){const u=((b[0]-x)*(c[1]-y)-(b[1]-y)*(c[0]-x))/area,v=((c[0]-x)*(a[1]-y)-(c[1]-y)*(a[0]-x))/area,t=1-u-v;if(Math.min(u,v,t)<0)continue;const z=u*a[2]+v*b[2]+t*c[2],i=y*w+x;if(z<depth[i]){depth[i]=z;png.data.set([...color,255],i*4);}}
+ }
+ scene.traverseVisible(o=>{if(!o.isMesh)return;const g=o.geometry,p=g.attributes.position,index=g.index,vertexColor=g.attributes.color,base=o.material.color||new T.Color('#ccc'),instances=o.isInstancedMesh?o.count:1;
+  for(let instance=0;instance<instances;instance++){const matrix=o.matrixWorld.clone(),tint=base.clone();if(o.isInstancedMesh){const im=new T.Matrix4();o.getMatrixAt(instance,im);matrix.multiply(im);const origin=new T.Vector3().setFromMatrixPosition(matrix);if(Math.hypot(origin.x-target.x,origin.z-target.z)>span*1.5)continue;if(o.instanceColor){const c=new T.Color();o.getColorAt(instance,c);tint.multiply(c);}}
+   for(let i=0;i<(index?index.count:p.count);i+=3){const ids=[0,1,2].map(j=>index?index.getX(i+j):i+j),vertices=ids.map(j=>new T.Vector3().fromBufferAttribute(p,j).applyMatrix4(matrix));if(Math.min(...vertices.map(v=>v.x))>target.x+span||Math.max(...vertices.map(v=>v.x))<target.x-span||Math.min(...vertices.map(v=>v.z))>target.z+span||Math.max(...vertices.map(v=>v.z))<target.z-span)continue;
+    const normal=new T.Vector3().crossVectors(vertices[1].clone().sub(vertices[0]),vertices[2].clone().sub(vertices[0])).normalize(),light=.55+.45*Math.max(0,normal.dot(sun)),color=tint.clone();if(vertexColor)color.multiply(new T.Color().fromBufferAttribute(vertexColor,ids[0]));color.multiplyScalar(light).convertLinearToSRGB();triangle(vertices.map(screen),[color.r,color.g,color.b].map(v=>Math.round(Math.min(1,v)*255)));
+   }
+  }
+ });
+ writeFileSync(`test-results/zoo-cpu-${view.name}.png`,PNG.sync.write(png));console.log(view.name,zoo.stats.visibleAnimals,'animals',zoo.gondola.stats.visibleCabins,'cabins');
+}
