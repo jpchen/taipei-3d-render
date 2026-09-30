@@ -14,7 +14,7 @@ def rod(name,a,b,r,color):
 # Blender Z up and -Y forward become Three Y up and +Z forward.
 brown=(.32,.16,.055);tan=(.72,.48,.18);black=(.025,.025,.022);white=(.79,.78,.68);gray=(.40,.43,.40);pink=(.87,.32,.36)
 roots=[]
-for species in ['giraffe','zebra','elephant','flamingo']:
+for species in ['giraffe','zebra','elephant','flamingo','panda','red-panda','monkey','penguin']:
  before=set(bpy.data.objects)
  if species=='giraffe':
   ell('Torso',(0,0,2.45),(.56,1.08,.75),tan)
@@ -45,11 +45,44 @@ for species in ['giraffe','zebra','elephant','flamingo']:
   for a,b,r in [((0,-1.82,2.1),(0,-2.1,1.35),.24),((0,-2.1,1.35),(0,-2.2,.7),.18),((0,-2.2,.7),(0,-2.48,.46),.13)]:rod('Trunk',a,b,r,gray)
   for x in [-.38,.38]:rod('Tusk',(x,-1.8,1.9),(x,-2.35,1.52),.07,white)
   rod('Tail',(0,1.4,2),(0,1.85,1.05),.055,gray)
- else:
+ elif species=='flamingo':
   ell('Body',(0,0,1.05),(.19,.4,.25),pink)
   for x in [-.10,.10]:rod('Thin leg',(x,0,.06),(x,0,1.05),.022,(.65,.3,.27))
   rod('Lower neck',(0,-.2,1.2),(0,-.05,1.62),.065,pink);rod('Upper neck',(0,-.05,1.62),(0,-.25,1.9),.055,pink);ell('Head',(0,-.32,1.9),(.09,.13,.12),pink);rod('Bill',(0,-.4,1.9),(0,-.48,1.77),.05,black)
   for x in [-.075,.075]:ell('Eye',(x,-.35,1.94),(.012,.014,.014),black)
+ elif species=='panda':
+  ell('White round body',(0,0,.76),(.48,.62,.57),(.9,.88,.79))
+  ell('Black shoulders',(0,-.32,.8),(.49,.22,.48),black)
+  for x in [-.3,.3]:
+   for y in [-.35,.35]:ell('Black paw',(x,y,.28),(.18,.23,.29),black)
+  ell('Panda face',(0,-.6,1.1),(.39,.35,.35),(.93,.9,.82))
+  for x in [-.26,.26]:
+   ell('Round black ear',(x,-.55,1.38),(.14,.1,.15),black)
+   ell('Eye patch',(x*.65,-.903,1.14),(.105,.042,.13),black)
+   ell('Eye glint',(x*.65,-.94,1.16),(.022,.013,.025),white)
+  ell('Muzzle',(0,-.935,1),(.17,.11,.1),white);ell('Nose',(0,-1.025,1.05),(.07,.035,.04),black)
+ elif species=='red-panda':
+  russet=(.65,.22,.07);cream=(.85,.78,.62);dark=(.12,.065,.035)
+  ell('Rust coat',(0,0,.5),(.22,.45,.23),russet)
+  for x in [-.16,.16]:
+   for y in [-.27,.27]:rod('Dark legs',(x,y,.08),(x,y,.46),.065,dark)
+  ell('Face',(0,-.43,.65),(.23,.22,.2),russet)
+  for x in [-.16,.16]:
+   ell('Cream cheek',(x,-.585,.61),(.095,.06,.1),cream);ell('Ear',(x,-.4,.85),(.09,.065,.12),cream);ell('Eye',(x*.72,-.617,.7),(.024,.025,.025),black)
+  ell('Muzzle',(0,-.65,.6),(.08,.05,.045),cream);ell('Nose',(0,-.695,.62),(.027,.024,.023),black)
+  for j in range(9):ell('Ringed fluffy tail',(0,.37+j*.075,.48-j*.024),(.115,.08,.11),russet if j%2 else cream)
+ elif species=='monkey':
+  fur=(.36,.3,.22);face=(.65,.46,.35)
+  ell('Torso',(0,0,.57),(.2,.28,.33),fur)
+  for x in [-.16,.16]:
+   rod('Arm',(x,-.14,.65),(x*1.2,-.26,.12),.055,fur);rod('Leg',(x,.14,.5),(x,.23,.08),.07,fur);ell('Hand',(x*1.2,-.28,.10),(.055,.075,.04),face)
+  ell('Head',(0,-.22,.97),(.2,.19,.22),fur);ell('Pink face',(0,-.37,.97),(.145,.07,.14),face)
+  for x in [-.2,.2]:ell('Ear',(x,-.22,.98),(.065,.045,.08),face);ell('Eye',(x*.38,-.44,1.02),(.021,.013,.021),black)
+  for j in range(6):rod('Curved tail',(0,.23+j*.065,.55+j*.025),(0,.295+j*.065,.575+j*.025),.025,fur)
+ elif species=='penguin':
+  ell('Dark back',(0,0,.62),(.24,.23,.48),black);ell('White belly',(0,-.16,.60),(.19,.10,.37),(.92,.89,.79));ell('Head',(0,-.04,1.06),(.18,.17,.19),black)
+  for x in [-.12,.12]:ell('Orange foot',(x,-.1,.06),(.1,.18,.05),(.76,.37,.045));ell('Flipper',(x*2,0,.6),(.055,.12,.31),black);ell('Eye',(x,-.18,1.1),(.021,.017,.021),white)
+  rod('Bill',(0,-.18,1.03),(0,-.36,1.02),.05,(.75,.37,.03));ell('Golden neck',(0,-.19,.86),(.12,.025,.07),(.84,.55,.06))
  parts=[o for o in bpy.data.objects if o not in before];root=bpy.data.objects.new(species,None);bpy.context.collection.objects.link(root)
  for o in parts:o.parent=root
  roots.append(root)
