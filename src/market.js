@@ -1,3 +1,4 @@
+import {vendorGeometry} from './vendor.js';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
@@ -17,13 +18,13 @@ export async function createMarket(scene,dusk){
  vMapUv=vec2((uv.x*.96+signIndex+.02)/6.,uv.y);vEmissiveMapUv=vMapUv;`);};
  const signGeo=new THREE.PlaneGeometry(2.5,.75).translate(0,1.92,1.01);const indices=new THREE.InstancedBufferAttribute(new Float32Array(data.stalls.length),1);signGeo.setAttribute('signIndex',indices);
  const glow=new THREE.MeshStandardMaterial({color:'#ef8640',emissive:'#ff9b37',emissiveIntensity:.9});
- const defs={counter:[counter,new THREE.MeshStandardMaterial({color:'#b4b5a8',metalness:.45,roughness:.6})],canopy:[canopy,new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.8})],sign:[signGeo,signMat],lantern:[lantern,glow]},meshes={};
+ const defs={vendor:[vendorGeometry(-.3),new THREE.MeshStandardMaterial({vertexColors:true,roughness:.8})],counter:[counter,new THREE.MeshStandardMaterial({color:'#b4b5a8',metalness:.45,roughness:.6})],canopy:[canopy,new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.8})],sign:[signGeo,signMat],lantern:[lantern,glow]},meshes={};
  const dummy=new THREE.Object3D(),clip=new THREE.Vector3(),color=new THREE.Color(),palette=['#a93d35','#37756a','#d5ac58','#596e8c','#bf673e','#657a4a'];
  for(const [name,[geometry,material]] of Object.entries(defs)){const mesh=new THREE.InstancedMesh(geometry,material,data.stalls.length);mesh.name=`Shilin: ${name}`;mesh.frustumCulled=false;mesh.count=0;scene.add(mesh);meshes[name]=mesh;}
  let previous=-10;const stats={stalls:data.stalls.length,visibleStalls:0,drawCalls:0};
  function update(time,camera,quality){if(time-previous<.35||document.hidden)return;previous=time;let count=0;
   for(const stall of data.stalls){clip.set(stall.x,stall.y+1.5,stall.z);if(clip.distanceTo(camera.position)>(quality==='low'?600:1200))continue;clip.project(camera);if(Math.abs(clip.x)>1.15||Math.abs(clip.y)>1.15||clip.z<0||clip.z>1)continue;dummy.position.set(stall.x,stall.y,stall.z);dummy.rotation.set(0,stall.angle,0);dummy.updateMatrix();for(const mesh of Object.values(meshes))mesh.setMatrixAt(count,dummy.matrix);meshes.canopy.setColorAt(count,color.set(palette[stall.variant]));indices.setX(count,stall.variant);count++;}
-  for(const mesh of Object.values(meshes)){mesh.count=count;mesh.visible=count>0;mesh.instanceMatrix.needsUpdate=true;}if(meshes.canopy.instanceColor)meshes.canopy.instanceColor.needsUpdate=true;indices.needsUpdate=true;signMat.emissiveIntensity=.4+dusk.value*.6;glow.emissiveIntensity=.75+dusk.value;stats.visibleStalls=count;stats.drawCalls=count?4:0;
+  for(const mesh of Object.values(meshes)){mesh.count=count;mesh.visible=count>0;mesh.instanceMatrix.needsUpdate=true;}if(meshes.canopy.instanceColor)meshes.canopy.instanceColor.needsUpdate=true;indices.needsUpdate=true;signMat.emissiveIntensity=.4+dusk.value*.6;glow.emissiveIntensity=.75+dusk.value;stats.visibleStalls=count;stats.drawCalls=count?5:0;
  }
  function destination(){const route=data.routes.reduce((a,b)=>a.p.length>b.p.length?a:b),a=route.p[Math.floor(route.p.length*.7)],b=route.p[Math.floor(route.p.length*.44)];return {pos:new THREE.Vector3(a[0],a[2]+18,a[1]),target:new THREE.Vector3(b[0],b[2]+4,b[1])};}
  return {update,stats,meshes,destination};

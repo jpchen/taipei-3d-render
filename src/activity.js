@@ -1,3 +1,4 @@
+import {insidePolygon} from './landmark-layout.js';
 import * as THREE from 'three';
 import { terrainHeight, makeFootways } from './world.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -79,6 +80,7 @@ export async function createCityLife(scene,dusk,{reducedMotion=false,terrain}={}
   const data=await response.json(),marketBounds=data.marketBounds,routes=data.routes.map(routeData).filter(r=>r.length>18),grid=new Map();
   makeFootways(scene,routes,terrain);
   for(const r of routes){const visited=new Set();for(let d=0;d<=r.length;d+=CELL*.6){const p=sample(r,Math.min(d,r.length-.001),{}),key=`${Math.floor(p.x/CELL)},${Math.floor(p.z/CELL)}`;if(!visited.has(key)){visited.add(key);if(!grid.has(key))grid.set(key,[]);grid.get(key).push(r);}}}
+  const obstacles=(data.pedestrianObstacles||[]).map(p=>({p,minX:Math.min(...p.map(v=>v[0]))-.4,maxX:Math.max(...p.map(v=>v[0]))+.4,minZ:Math.min(...p.map(v=>v[1]))-.4,maxZ:Math.max(...p.map(v=>v[1]))+.4}));
   const clock={value:0},mat=material(clock,dusk),kinds=['car','bus','scooter','person'],caps={car:750,bus:70,scooter:320,person:1400},meshes={};
   for(const kind of kinds){const mesh=new THREE.InstancedMesh(prototype(kind),mat,caps[kind]);mesh.name=`City life: ${kind}`;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);mesh.frustumCulled=false;mesh.count=0;mesh.setColorAt(0,new THREE.Color());scene.add(mesh);meshes[kind]=mesh;}
   let active=[],lastRefresh=-10,lastTick=-10,lastFocus=new THREE.Vector3(Infinity,0,Infinity),enabled=true;
@@ -111,6 +113,8 @@ export async function createCityLife(scene,dusk,{reducedMotion=false,terrain}={}
         const lane=walking?(seed-.5)*(r.market?3.2:1.5):r.oneway?(seed-.5)*Math.max(1,r.w-5):direction*Math.min(r.w*.22,4.5);
         point.x+=point.dz*lane;point.z-=point.dx*lane;point.y=terrainHeight(terrain,point.x,point.z)+(r.profile?point.lift:0)+.32;
         if(r.marketStreet&&marketBounds&&point.x>marketBounds[0]&&point.x<marketBounds[2]&&point.z>marketBounds[1]&&point.z<marketBounds[3])continue;
+        if(walking)for(const deck of data.pedestrianDecks||[])if(insidePolygon([point.x,point.z],deck.p))point.y=Math.max(point.y,deck.height+.1);
+        if(walking&&obstacles.some(o=>point.x>o.minX&&point.x<o.maxX&&point.z>o.minZ&&point.z<o.maxZ&&insidePolygon([point.x,point.z],o.p)))continue;
         const distance=Math.hypot(point.x-camera.position.x,point.y-camera.position.y,point.z-camera.position.z);
         if(distance>(walking?personDistance:vehicleDistance))continue;
         clip.set(point.x,point.y+1,point.z).project(camera);if(clip.z<0||clip.z>1||Math.abs(clip.x)>1.08||Math.abs(clip.y)>1.1)continue;
